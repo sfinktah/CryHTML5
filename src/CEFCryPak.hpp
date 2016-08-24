@@ -6,13 +6,12 @@
 
 #include <cef_scheme.h>
 #include <include/wrapper/cef_stream_resource_handler.h>
-
 /** @brief Implementation of the resource handler for client requests. */
 class CEFCryPakResourceHandler : public CefResourceHandler
 {
     public:
         FILE* m_fHandle; //!< file handle inside CryPak
-        string m_sPath; //!< file path
+		string m_sPath; //!< file path
         string m_sExtension; //!< file extension
         string m_sMime; //!< mime type
         size_t m_nSize; //!< file size

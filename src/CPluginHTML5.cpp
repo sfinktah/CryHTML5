@@ -2,16 +2,25 @@
 
 #include <StdAfx.h>
 #include <CPluginHTML5.h>
+#include <CPluginD3D.h>
+
 
 #include <CEFHandler.hpp>
 #include <CEFCryPak.hpp>
-
 #include <PMUtils.hpp>
+
+#include <Cry_Camera.h>
+
+#pragma comment(lib, "libcef")
+#pragma comment(lib, "libcef_dll_wrapper")
+
+class CCamera;
 
 namespace HTML5Plugin
 {
     CPluginHTML5* gPlugin = NULL;
     D3DPlugin::IPluginD3D* gD3DSystem = NULL;
+	// D3DPlugin::IPluginD3D * gPlugin = NULL;
 
     CPluginHTML5::CPluginHTML5() :
         m_refCEFHandler( nullptr ),
@@ -62,11 +71,12 @@ namespace HTML5Plugin
     };
 
     bool CPluginHTML5::Init( SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory )
+    // bool CPluginHTML5::Init()
     {
         bool bSuccess = true;
 
-        gPluginManager = ( PluginManager::IPluginManager* )pPluginManager->GetConcreteInterface( NULL );
-        bSuccess = CPluginBase::Init( env, startupParams, pPluginManager, sPluginDirectory );
+        // gPluginManager = ( PluginManager::IPluginManager* )pPluginManager->GetConcreteInterface( NULL );
+        // bSuccess = CPluginBase::Init( env, startupParams, pPluginManager, sPluginDirectory );
 
         return bSuccess;
     }
@@ -78,6 +88,7 @@ namespace HTML5Plugin
 
     void Command_URL( IConsoleCmdArgs* pArgs )
     {
+#ifdef WE_HAD_A_CONSOLE
         if ( pArgs->GetArgCount() > 1 )
         {
 #undef GetCommandLine
@@ -95,10 +106,12 @@ namespace HTML5Plugin
                 gPlugin->SetURL( PluginManager::UTF82UCS2( sText ) );
             }
         }
+#endif
     };
 
     void Command_JS( IConsoleCmdArgs* pArgs )
     {
+#ifdef WE_HAD_A_CONSOLE
         if ( pArgs->GetArgCount() > 1 )
         {
 #undef GetCommandLine
@@ -116,10 +129,12 @@ namespace HTML5Plugin
                 gPlugin->ExecuteJS( PluginManager::UTF82UCS2( sText ) );
             }
         }
+#endif
     };
 
     void Command_Input( IConsoleCmdArgs* pArgs )
     {
+#ifdef WE_HAD_A_CONSOLE
         if ( pArgs->GetArgCount() == 2 )
         {
             gPlugin->SetInputMode( PluginManager::ParseString<int>( pArgs->GetArg( 1 ) ) );
@@ -129,11 +144,14 @@ namespace HTML5Plugin
         {
             gPlugin->SetInputMode( PluginManager::ParseString<int>( pArgs->GetArg( 1 ) ), PluginManager::ParseString<bool>( pArgs->GetArg( 2 ) ) );
         }
+#endif
     };
 
     bool CPluginHTML5::RegisterTypes( int nFactoryType, bool bUnregister )
     {
-        // Note: Autoregister Flownodes will be automatically registered by the Base class
+		bool bRet = TRUE; // or false, who knows
+#ifdef WE_CARED
+		// Note: Autoregister Flownodes will be automatically registered by the Base class
         bool bRet = CPluginBase::RegisterTypes( nFactoryType, bUnregister );
 
         using namespace PluginManager;
@@ -181,6 +199,7 @@ namespace HTML5Plugin
             }
         }
 
+#endif
         return bRet;
     }
 
@@ -201,7 +220,7 @@ namespace HTML5Plugin
 
         if ( bSuccess )
         {
-            bSuccess = PluginManager::safeGetPluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+            bSuccess = !!PluginManager::safeGetPluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
         }
 
         return bSuccess;
@@ -241,7 +260,40 @@ namespace HTML5Plugin
     bool CPluginHTML5::InitD3DPlugin()
     {
         //Tells This Instance To Depend On The D3D Plug-in.
-        gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+        // gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+
+		static D3DPlugin::CPluginD3D modulePlugin;
+		D3DPlugin::gPlugin = &modulePlugin;
+		D3DPlugin::gPlugin->InitWithoutPluginManager(); // modulePlugin.InitWithoutPluginManager();
+
+		// IPluginD3DEx* m_pDXSystem;
+		/*
+		void* GetConcreteInterface( const char* sInterfaceVersion )
+		{
+			return static_cast <IPluginD3D*>( m_pDXSystem );
+		};
+
+		template<typename tCIFace>
+		static tCIFace safeUsePluginConcreteInterface( const char* sPlugin, const char* sVersion = NULL )
+		{
+			IPluginBase* pBase = gPluginManager ? gPluginManager->GetPluginByName( sPlugin ) : NULL;
+			tCIFace pPlugin = static_cast<tCIFace>( pBase ? pBase->GetConcreteInterface( sVersion ) : NULL );
+
+			if ( pPlugin )
+			{
+				pBase->AddRef();
+			}
+
+			return pPlugin;
+		};
+
+		*/
+
+        // gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+		gD3DSystem = static_cast <D3DPlugin::IPluginD3D*>(modulePlugin.GetConcreteInterface(NULL));
+
+		// When to init? And as what?
+		// Apparently we must init before assigned gD3DSystem, else we will abort on the check beneath.
 
         //If We Could Not Resolve The D3D Dependency Then Return False.
         if ( !gD3DSystem )
@@ -292,7 +344,7 @@ namespace HTML5Plugin
 
         // Now initialize CEF
         CefMainArgs main_args;
-        bool bSuccess = CefInitialize( main_args, settings, NULL );
+        bool bSuccess = CefInitialize( main_args, settings, NULL, NULL );
         HTML5Plugin::gPlugin->LogAlways( "Initialize %s ", bSuccess ? "success" : "failed" );
 
         // Initialize Components
@@ -315,8 +367,10 @@ namespace HTML5Plugin
         // Window Information
         CefWindowInfo info;
 
-        info.SetAsOffScreen( HWND( gEnv->pRenderer->GetHWND() ) ); //info.SetAsOffScreen( NULL );
-        info.SetTransparentPainting( TRUE );
+		info.transparent_painting_enabled = TRUE;
+		info.windowless_rendering_enabled = TRUE;
+        // info.SetAsOffScreen( HWND( gEnv->pRenderer->GetHWND() ) ); //info.SetAsOffScreen( NULL );
+        // info.SetTransparentPainting( TRUE );
 
         // Register Listener for Render Handler
         gD3DSystem->RegisterListener( m_refCEFHandler->_renderHandler.get() );
@@ -373,7 +427,7 @@ namespace HTML5Plugin
     {
         gPlugin->LogAlways( "Shutting down" );
 
-        m_refCEFHandler->m_input.UnregisterListeners();
+        // m_refCEFHandler->m_input.UnregisterListeners();
 
         m_refCEFFrame = nullptr;
         m_refCEFHandler = nullptr;
@@ -406,6 +460,7 @@ namespace HTML5Plugin
         return false;
     }
 
+#ifndef __FUCK_U
     bool CPluginHTML5::WorldPosToScreenPos( CCamera cam, Vec3 vWorld, Vec3& vScreen, Vec3 vOffset /*= Vec3( ZERO ) */ )
     {
         if ( m_refCEFHandler.get() != nullptr && m_refCEFHandler->_renderHandler.get() != nullptr )
@@ -434,6 +489,7 @@ namespace HTML5Plugin
 
         return false;
     }
+#endif
 
     void CPluginHTML5::ScaleCoordinates( float fX, float fY, float& foX, float& foY, bool bLimit /*= false*/, bool bCERenderer /*= true */ )
     {
@@ -447,7 +503,7 @@ namespace HTML5Plugin
     {
         if ( m_refCEFHandler.get() != nullptr )
         {
-            m_refCEFHandler->m_input.SetInputMode( nMode, bExclusive );
+            // m_refCEFHandler->m_input.SetInputMode( nMode, bExclusive );
         }
     }
 
@@ -461,7 +517,7 @@ namespace HTML5Plugin
         if ( cm5_active > 0.0 && m_refCEFHandler.get() != nullptr )
         {
             float fX = 0.0f, fY = 0.0f;
-            m_refCEFHandler->m_input.GetCursorPos( fX, fY );
+            // m_refCEFHandler->m_input.GetCursorPos( fX, fY );
 
             return IsOpaque( fX, fY );
         }
@@ -471,14 +527,22 @@ namespace HTML5Plugin
 
     bool CPluginHTML5::IsOpaque( float fX, float fY )
     {
+		
+		/*
         if ( cm5_active > 0.0 && m_refCEFHandler.get() != nullptr )
         {
             const ColorB& color = m_refCEFHandler->_renderHandler->GetPixel( fX, fY );
 
             return color.a >= ( cm5_alphatest * 255 );
         }
+		*/
 
         return false;
     }
+
+
+
+
+
 
 }

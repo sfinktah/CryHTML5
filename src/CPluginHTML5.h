@@ -3,9 +3,9 @@
 #pragma once
 
 #include <IPluginBase.h>
-#include <Game.h>
+// #include <Game.h>
 
-#include <IPluginManager.h>
+// #include <IPluginManager.h>
 #include <CPluginBase.hpp>
 
 #include <IPluginHTML5.h>
@@ -17,13 +17,21 @@
 #include <cef_app.h>
 #include <cef_client.h>
 
+#define __OVERRIDE override
+
+#ifdef WHY_DOES_THIS_FUCK_ME_UP
+#define _HAS_ITERATOR_DEBUGGING 1
+#define _ITERATOR_DEBUG_LEVEL 2 
+#define _SECURE_SCL 1
+#endif
+
 class CEFCryHandler;
 
 namespace HTML5Plugin
 {
     /**
-    * @brief Provides information and manages the resources of this plugin.
-    */
+     * @brief Provides information and manages the resources of this plugin.
+     */
     class CPluginHTML5 :
         public PluginManager::CPluginBase,
         public IPluginHTML5
@@ -46,57 +54,57 @@ namespace HTML5Plugin
             CefRefPtr<CefFrame> m_refCEFFrame;
 
             // IPluginBase
-            bool Release( bool bForce = false )override;
+            bool Release( bool bForce = false )__OVERRIDE;
 
-            int GetInitializationMode() const override
+            int GetInitializationMode() const __OVERRIDE
             {
                 return int( PluginManager::IM_Default );
             };
 
-            bool Init( SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory )override;
+            bool Init( SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory )__OVERRIDE;
 
-            bool RegisterTypes( int nFactoryType, bool bUnregister )override;
+            bool RegisterTypes( int nFactoryType, bool bUnregister )__OVERRIDE;
 
-            const char* GetVersion() const override
+            const char* GetVersion() const __OVERRIDE
             {
                 return "0.5.0.0";
             };
 
-            const char* GetName() const override
+            const char* GetName() const __OVERRIDE
             {
                 return PLUGIN_NAME;
             };
 
-            const char* GetCategory() const override
+            const char* GetCategory() const __OVERRIDE
             {
                 return "Visual";
             };
 
-            const char* ListAuthors() const override
+            const char* ListAuthors() const __OVERRIDE
             {
                 return "Hendrik Polczynski, Richard Marcoux III";
             };
 
-            const char* ListCVars() const override;
+            const char* ListCVars() const __OVERRIDE;
 
-            const char* GetStatus() const override;
+            const char* GetStatus() const __OVERRIDE;
 
-            const char* GetCurrentConcreteInterfaceVersion() const override
+            const char* GetCurrentConcreteInterfaceVersion() const __OVERRIDE
             {
                 return "1.0";
             };
 
-            void* GetConcreteInterface( const char* sInterfaceVersion ) override
+            void* GetConcreteInterface( const char* sInterfaceVersion ) __OVERRIDE
             {
                 return static_cast <IPluginHTML5*>( this );
             };
 
-            virtual bool InitDependencies() override;
+            virtual bool InitDependencies() __OVERRIDE;
 
-            virtual bool CheckDependencies() const override;
+            virtual bool CheckDependencies() const __OVERRIDE;
 
             // IPluginHTML5
-            IPluginBase* GetBase() override
+            IPluginBase* GetBase() __OVERRIDE
             {
                 return static_cast<IPluginBase*>( this );
             };
@@ -105,25 +113,25 @@ namespace HTML5Plugin
         private:
 
             /**
-            * @brief Shuts Down This Instance's Plug-in Dependencies.
-            * @return void
-            */
+             * @brief Shuts Down This Instance's Plug-in Dependencies.
+             * @return void
+             */
             void ShutdownDependencies();
 
             void ShutdownCEF();
 
             /**
-            * @brief Initializes The Dependent D3D Plug-in.  Called By This Instance's InitDependencies() Method.
-            * @return True If The D3D Plug-in Was Successfully Initialized.  False Otherwise.
-            */
+             * @brief Initializes The Dependent D3D Plug-in.  Called By This Instance's InitDependencies() Method.
+             * @return True If The D3D Plug-in Was Successfully Initialized.  False Otherwise.
+             */
             bool InitD3DPlugin();
 
             bool InitializeCEF( );
             bool InitializeCEFBrowser( );
 
             /**
-            * @brief Shuts Down The Dependent D3D Plug-in.  Called By This Instance's ShutdownDependencies()
-            */
+             * @brief Shuts Down The Dependent D3D Plug-in.  Called By This Instance's ShutdownDependencies()
+             */
             void ShutdownD3DPlugin();
 
         public:
@@ -150,12 +158,13 @@ namespace HTML5Plugin
 
     extern CPluginHTML5* gPlugin;
     extern D3DPlugin::IPluginD3D* gD3DSystem;
+    // extern CPluginD3D* gD3DSystem;
 }
 
 /**
-* @brief This function is required to use the Autoregister Flownode without modification.
-* Include the file "CPluginHTML5.h" in front of flownode.
-*/
+ * @brief This function is required to use the Autoregister Flownode without modification.
+ * Include the file "CPluginHTML5.h" in front of flownode.
+ */
 inline void GameWarning( const char* sFormat, ... ) PRINTF_PARAMS( 1, 2 );
 inline void GameWarning( const char* sFormat, ... )
 {

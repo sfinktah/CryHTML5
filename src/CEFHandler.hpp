@@ -1,14 +1,14 @@
 /* CryHTML5 - for licensing and copyright see license.txt */
 
 #pragma once
-
+#pragma warning(default:4263 4264 4265 4266 4623 4624 4625 4626)
 #include <cef_app.h>
 #include <cef_client.h>
 
 #include <CPluginHTML5.h>
 #include <CEFRenderHandler.hpp>
 
-#include <CEFInputHandler.hpp>
+// #include <CEFInputHandler.hpp>
 
 /** @brief handle loading of web pages */
 class CEFCryLoadHandler : public CefLoadHandler
@@ -55,7 +55,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 
     public:
         CefRefPtr<CEFCryRenderHandler> _renderHandler; //!< the renderer handler
-        CEFCryInputHandler m_input; //!< the input handler
+        // CEFCryInputHandler m_input; //!< the input handler
 
     public:
         CEFCryHandler( int windowWidth, int windowHeight )
@@ -130,7 +130,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             {
                 HTML5Plugin::gPlugin->m_refCEFFrame = browser->GetMainFrame(); // remember frame
 
-                HTML5Plugin::gPlugin->m_sCEFDebugURL = browser->GetHost()->GetDevToolsURL( false ).ToString().c_str(); // browser->GetHost()->GetDevToolsURL( false ).ToString();
+                // HTML5Plugin::gPlugin->m_sCEFDebugURL = browser->GetHost()->GetDevToolsURL( false ).ToString().c_str(); // browser->GetHost()->GetDevToolsURL( false ).ToString();
                 HTML5Plugin::gPlugin->LogAlways( "Devtools URL: %s", HTML5Plugin::gPlugin->m_sCEFDebugURL.c_str() );
 
                 HTML5Plugin::gPlugin->ShowDevTools();

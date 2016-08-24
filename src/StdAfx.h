@@ -4,23 +4,24 @@
 
 // Insert your headers here
 #include <platform.h>
+#include <windows.h>
 #include <algorithm>
 #include <vector>
 #include <memory>
 #include <list>
 #include <functional>
 #include <limits>
-#include <smartptr.h>
-#include <CryThread.h>
-#include <Cry_Math.h>
-#include <ISystem.h>
-#include <I3DEngine.h>
-#include <IInput.h>
-#include <IConsole.h>
-#include <ITimer.h>
-#include <ILog.h>
-#include <IGameplayRecorder.h>
-#include <ISerialize.h>
+// #include "smartptr.h"
+// #include <CryThread.h>
+// #include <Cry_Math.h>
+// #include <ISystem.h>
+// #include <I3DEngine.h>
+// #include <IInput.h>
+// #include <IConsole.h>
+// #include <ITimer.h>
+// #include <ILog.h>
+// #include <IGameplayRecorder.h>
+// #include <ISerialize.h>
 
 #ifndef _FORCEDLL
 #define _FORCEDLL

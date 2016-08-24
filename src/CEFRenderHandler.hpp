@@ -4,19 +4,22 @@
 
 #include <cef_app.h>
 #include <cef_client.h>
+#include <cef_browser.h>
 #include <cef_process_util.h>
 #include <cef_runnable.h>
-
 #include <CPluginHTML5.h>
 #include <FullscreenTriangleDrawer.h>
-
+#include "../StaticTest.h"
+// #include "Cry_Color.h"
+#include "Cry_Math.h"
 #include <d3d11.h>
-
-//#define USE_MAPPED // define when using mapped memory (not performant)
 
 //#include "../GameSDK/GameDll/MyFiles/Camera/MeasureTime.hpp"
 
 #define TEXTURE_FLAGS FILTER_LINEAR | FT_DONT_STREAM | FT_NOMIPS // texture flags
+#ifndef f32
+#define f32 FLOAT
+#endif
 
 /** @brief CryENGINE & Direct3D renderer handler */
 class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEventListener
@@ -29,7 +32,7 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
         const void* _buffer; //!< the CEF frame buffer (not synchronized to reduce overhead)
 
         ID3D11Texture2D* _texture; //!< the Direct3D 11 texture
-        ITexture* _itexture;  //!< the CryENGINE texture
+        // ITexture* _itexture;  //!< the CryENGINE texture
         ID3D11ShaderResourceView* _srv; //!< the Direct3D 11 texture resource
 
         HTML5Plugin::CFullscreenTriangleDrawer _triangledrawer; //!< the draw helper
@@ -70,9 +73,9 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
         virtual void ScaleCoordinates( float fX, float fY, float& foX, float& foY, bool bLimit = false, bool bCERenderer = true )
         {
             //HTML5Plugin::gPlugin->LogAlways( "1: X %f Y %f", fX, fY );
-
+			throw std::exception("have to set width and height");
             int x, y, width, height;
-            gEnv->pRenderer->GetViewport( &x, &y, &width, &height );
+            // gEnv->pRenderer->GetViewport( &x, &y, &width, &height );
 
             // make relative for scaling
             if ( bCERenderer )
@@ -86,8 +89,9 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
             // overflow
             if ( bLimit )
             {
-                fX = clamp_tpl( fX, 0.0f, 1.0f );
-                fY = clamp_tpl( fY, 0.0f, 1.0f );
+				// clamp template (ensures value is within range)
+                // fX = clamp_tpl( fX, 0.0f, 1.0f );
+                // fY = clamp_tpl( fY, 0.0f, 1.0f );
             }
 
             //HTML5Plugin::gPlugin->LogAlways( "3: X %f Y %f", fX, fY );
@@ -112,10 +116,6 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 //            {
 //#endif
 
-                if ( HTML5Plugin::gPlugin->cm5_active == 0.0f )
-                {
-                    return;
-                }
 
                 // Create resources when they dont exist yet
                 if ( !_texture )
@@ -153,56 +153,6 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
             const int bytesPerRow = _windowWidth * 4;
 
-#ifdef USE_MAPPED
-            D3D11_MAPPED_SUBRESOURCE mapped;
-            HRESULT hr = pContext->Map( pTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped ); // D3D11_MAP_WRITE doesn't work so we will not update all so don't use USE_MAPPED
-
-            if ( FAILED( hr ) )
-            {
-                HTML5Plugin::gPlugin->LogAlways( "Fail Map hr=%d", hr );
-            }
-
-            else
-            {
-                int h = _dy2 - dy;
-                int w = _dx2 - dx;
-
-                const int _pitchDst = mapped.RowPitch + _dx * 4;
-                int offsetDst = mapped.RowPitch * _dy;
-                char* pDest = static_cast<char*>( mapped.pData );
-                const char* pSrc = ( const char* )_buffer;
-
-                const size_t size = _windowWidth * _windowHeight * 4;
-
-                int offsetSrc = bytesPerRow * _dy;
-
-                const int _bytesRow = w * 4;
-                const int _pitchSrc = bytesPerRow + _dx * 4;
-
-                if ( _windowWidth * 4 == mapped.RowPitch && h == _windowHeight && w == _windowWidth )
-                {
-                    ::memcpy( pDest, pSrc, size );
-                }
-
-                else
-                {
-                    pSrc += _dy * bytesPerRow +  _dx * 4;
-                    pDest += _dy * mapped.RowPitch + _dx * 4;
-
-                    for ( int row = _dy; row < _dy2; ++row )
-                    {
-                        ::memcpy( pDest, pSrc, _bytesRow );
-                        pSrc += _pitchSrc;
-                        pDest += _pitchDst;
-                    }
-                }
-
-                pContext->Unmap( pTexture, 0 );
-
-                resetdirty();
-            }
-
-#else
             D3D11_BOX box = {0}; // http://msdn.microsoft.com/en-us/library/windows/desktop/ff476486%28v=vs.85%29.aspx
             box.front = 0;
             box.back = 1;
@@ -220,7 +170,6 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
             pSrc += box.top * bytesPerRow + box.left * 4;
 
             pContext->UpdateSubresource( pTexture, 0, &box, ( void* )pSrc, bytesPerRow, 0 );
-#endif
         }
 
         /** @brief Creates the CryENGINE and Direct3D resource */
@@ -228,13 +177,9 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
         {
             ID3D11Device* pDevice = static_cast<ID3D11Device*>( HTML5Plugin::gD3DSystem->GetDevice() );
 
-#ifdef USE_MAPPED
-            _itexture = HTML5Plugin::gD3DSystem->CreateTexture( ( void** )&_texture, _windowWidth, _windowHeight, 1,  eTF_X8R8G8B8, FT_USAGE_DYNAMIC | TEXTURE_FLAGS );
-#else
-            _itexture = HTML5Plugin::gD3DSystem->CreateTexture( ( void** )&_texture, _windowWidth, _windowHeight, 1,  eTF_X8R8G8B8, TEXTURE_FLAGS ); //FT_USAGE_RENDERTARGET?
-#endif
+            // _itexture = HTML5Plugin::gD3DSystem->CreateTexture( ( void** )&_texture, _windowWidth, _windowHeight, 1,  eTF_X8R8G8B8, TEXTURE_FLAGS ); //FT_USAGE_RENDERTARGET?
 
-            HTML5Plugin::gPlugin->LogAlways( "CreateTexture: %p, %p", _texture, _itexture );
+           // HTML5Plugin::gPlugin->LogAlways( "CreateTexture: %p, %p", _texture, _itexture );
 
             if ( _texture )
             {
@@ -253,12 +198,12 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
                 if ( SUCCEEDED( hr ) )
                 {
-                    HTML5Plugin::gPlugin->LogAlways( "CreateShaderResourceView: %p", _srv );
+                   // HTML5Plugin::gPlugin->LogAlways( "CreateShaderResourceView: %p", _srv );
                 }
 
                 else
                 {
-                    HTML5Plugin::gPlugin->LogAlways( "Fail CreateShaderResourceView" );
+                   // HTML5Plugin::gPlugin->LogAlways( "Fail CreateShaderResourceView" );
                 }
             }
         }
@@ -272,25 +217,8 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
             resetdirty();
             _buffer = nullptr;
             _texture = nullptr;
-            _itexture = nullptr;
+            // _itexture = nullptr;
             _srv = nullptr;
-        }
-
-        /** @brief get pixel color at position */
-        virtual ColorB GetPixel( int x, int y )
-        {
-            // check if on surface
-            if ( x < 0 || y < 0 || x >= _windowWidth || y >= _windowHeight )
-            {
-                return ColorB( 0, 0, 0, 0 );
-            }
-
-            // get pixel position in buffer
-            size_t nPos = _windowWidth * y + x;
-            uint8* pPos = &( ( uint8* )_buffer )[nPos];
-
-            // CEF uses RGBA order
-            return ColorB( pPos[0], pPos[1], pPos[2], pPos[3] );
         }
 
         virtual bool GetRootScreenRect( CefRefPtr<CefBrowser> browser, CefRect& rect )
@@ -327,7 +255,7 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
         {
             std::string url = browser->GetMainFrame()->GetURL().ToString();
 
-            // HTML5Plugin::gPlugin->LogAlways( "OnPaint: %s, type(%d), %d, %dm %0x016p", SAFESTR( url.c_str() ), int( type ), width, height, buffer );
+            //// HTML5Plugin::gPlugin->LogAlways( "OnPaint: %s, type(%d), %d, %dm %0x016p", SAFESTR( url.c_str() ), int( type ), width, height, buffer );
 
             for ( auto iter = dirtyRects.begin(); iter != dirtyRects.end(); ++iter )
             {

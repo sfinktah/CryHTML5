@@ -13,9 +13,9 @@
 /** @brief CryENGINE CEF input handler class */
 class CEFCryInputHandler :
     public ISystemEventListener,
-    public IInputEventListener,
-    public IHardwareMouseEventListener,
-    public IGameFrameworkListener
+    // public IInputEventListener,
+    public IHardwareMouseEventListener
+    // public IGameFrameworkListener
 {
     private:
         /** input type */
