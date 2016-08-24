@@ -70,13 +70,20 @@ class CEFCryPakResourceHandler : public CefResourceHandler
             }
 
             // Open File
-            if ( ( m_fHandle = gEnv->pCryPak->FOpen( m_sPath, "rb" ) ) == NULL )
+			// sfink
+            // if ( ( m_fHandle = gEnv->pCryPak->FOpen( m_sPath, "rb" ) ) == NULL )
+            if ( ( m_fHandle = ::fopen(m_sPath, "rb" ) ) == NULL )
             {
                 HTML5Plugin::gPlugin->LogWarning( "ProcessReques(%s) Unable to find specified path in pak", m_sPath.c_str() );
             }
 
             else {
-                m_nSize = gEnv->pCryPak->FGetSize( m_fHandle );
+				m_nSize;
+				fseek(m_fHandle, 0L, SEEK_END);
+				m_nSize = ftell(m_fHandle);
+				// fseek(m_fHandle, 0L, SEEK_SET);
+				rewind(m_fHandle);
+                // m_nSize = gEnv->pCryPak->FGetSize( m_fHandle );
 
                 HTML5Plugin::gPlugin->LogAlways( "ProcessReques(%s) Success Ext(%s) Mime(%s) Size(%ld)", m_sPath.c_str(), m_sExtension.c_str(), m_sMime.c_str(), m_nSize );
 
@@ -146,7 +153,8 @@ class CEFCryPakResourceHandler : public CefResourceHandler
                 int transfer_size = min( bytes_to_read, static_cast<int>( m_nSize - m_nOffset ) );
 
                 // Read from pack
-                transfer_size = gEnv->pCryPak->FReadRaw( data_out, 1, transfer_size, m_fHandle );
+				transfer_size = ::fread(data_out, 1, bytes_to_read, m_fHandle);
+                // transfer_size = gEnv->pCryPak->FReadRaw( data_out, 1, transfer_size, m_fHandle );
 
                 // Save offset
                 m_nOffset += transfer_size;

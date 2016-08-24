@@ -1,5 +1,6 @@
 /* CryHTML5 - for licensing and copyright see license.txt */
 
+#include "TwSimpleDX11.h"
 #include <StdAfx.h>
 #include <CPluginHTML5.h>
 #include <CPluginD3D.h>
@@ -304,6 +305,10 @@ namespace HTML5Plugin
 
         else
         {
+			gD3DSystem->SetDevice(g_D3DDev);
+			gD3DSystem->SetDeviceContext(g_D3DDevCtx);
+			gD3DSystem->SetSwapChain(g_SwapChain);
+
             gD3DSystem->GetDevice(); // start search if isn't already found
         }
 
