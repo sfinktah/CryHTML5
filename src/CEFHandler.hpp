@@ -129,6 +129,9 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             if ( HTML5Plugin::gPlugin->m_sCEFDebugURL.empty() )
             {
                 HTML5Plugin::gPlugin->m_refCEFFrame = browser->GetMainFrame(); // remember frame
+                HTML5Plugin::gPlugin->m_refCEFBrowser  = browser; // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
+                // and why not call this event while we're fucking at it too
+                HTML5Plugin::gPlugin->OnAfterCreated(browser); // Surely we must need more CefRefPtr's
 
                 // HTML5Plugin::gPlugin->m_sCEFDebugURL = browser->GetHost()->GetDevToolsURL( false ).ToString().c_str(); // browser->GetHost()->GetDevToolsURL( false ).ToString();
                 HTML5Plugin::gPlugin->LogAlways( "Devtools URL: %s", HTML5Plugin::gPlugin->m_sCEFDebugURL.c_str() );
@@ -143,6 +146,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             {
                 HTML5Plugin::gPlugin->m_sCEFDebugURL = "";
                 HTML5Plugin::gPlugin->m_refCEFFrame = nullptr;
+                HTML5Plugin::gPlugin->m_refCEFBrowser = nullptr; // sfink: better remove it aswell
             }
         };
 

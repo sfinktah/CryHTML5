@@ -208,6 +208,11 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
             ); //FT_USAGE_RENDERTARGET?
 			*/
 			
+			// sfink: not sure where windowheight and windowwidth are set, but changing them h ere
+			_windowWidth = 1280;
+			_windowHeight = 720;
+
+			
 			// This snippet is from https://chromium.googlesource.com/external/angleproject/dx11proto/+/fc84fd6f076d504af33a78a906985ea2a2268346/src/libGLESv2/renderer/RenderTarget11.cpp
 			unsigned int mSubresourceIndex;
 			ID3D11Texture2D *mTexture;
@@ -224,7 +229,7 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 			int depth = 0; // or maybe zero, it changes whether we bind as a STENCIL or a SHADER resource
 
 			// When copying the buffer to D3D11_MAPPED_SUBRESOURCE I miscalculated the row size so I was getting black image..So if anyone gets here trying to render with Direct3D, just use DXGI_FORMAT_B8G8R8A8_UNORM it works!
-			DXGI_FORMAT requestedFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+			DXGI_FORMAT requestedFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 			if (_windowWidth > 0 && _windowHeight > 0)
 			{
 				// Create texture resource
@@ -236,8 +241,8 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 				desc.Format = requestedFormat;
 				desc.SampleDesc.Count = 1; // sfink: hmmm. maybe 1 will do
 				desc.SampleDesc.Quality = 0;
-				desc.Usage = D3D11_USAGE_DEFAULT;
-				desc.CPUAccessFlags = 0; // sfink: optimise this later
+				desc.Usage =  D3D11_USAGE_DEFAULT; // D3D11_USAGE_DYNAMIC; // 
+				desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // sfink: optimise this later
 				desc.MiscFlags = 0;
 				desc.BindFlags = (depth ? D3D11_BIND_DEPTH_STENCIL : (D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE));
 
