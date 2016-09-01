@@ -4,6 +4,7 @@
 #pragma warning(default:4263 4264 4265 4266 4623 4624 4625 4626)
 #include <cef_app.h>
 #include <cef_client.h>
+#include <include/capi/cef_app_capi.h>
 #include <include/capi/cef_render_process_handler_capi.h>
 
 #include <CPluginHTML5.h>
@@ -43,9 +44,11 @@ class CEFCryLoadHandler : public CefLoadHandler
 			//DEBUG_PTR(HTML5Plugin::gPlugin->m_refCEFHandler);
 			DEBUG_PTR(HTML5Plugin::gPlugin->m_refCEFBrowser);
 			DEBUG_PTR(_cefClient);
+			// THis we tried last
+			//_cefClient->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
+
 			//DEBUG_PTR(_renderHandler->SendContextCreated);
 			//HTML5Plugin::gPlugin->m_refCEFBrowser  = browser; // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
-			_cefClient->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
 			//HTML5Plugin::gPlugin->m_refCEFHandler->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
         }
 
@@ -70,6 +73,8 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
         CefRefPtr<CEFCryRenderHandler> _renderHandler; //!< the renderer handler
 		CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
         // CEFCryInputHandler m_input; //!< the input handler
+		//DelegateSet delegates_;
+
 
     public:
         CEFCryHandler( int windowWidth, int windowHeight )
@@ -77,6 +82,10 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             _renderHandler = new CEFCryRenderHandler( windowWidth, windowHeight );
             _loadHandler = new CEFCryLoadHandler();
 			_loadHandler->_cefClient = this;
+			
+			// IS it too early for this? 
+			//CreateDelegates(delegates_);
+
         };
 
         ~CEFCryHandler() { };
@@ -186,6 +195,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 
 				DEBUG_PTR(_renderHandler);
 				DEBUG_PTR(_renderHandler->m_MessageRouterRenderSide);
+				DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
 				DEBUG_OUT("m_MessageRouterRenderSide = _renderHandler->m_MessageRouterRenderSide");
 				ASSIGN_CHECK(
 					m_MessageRouterRenderSide = _renderHandler->m_MessageRouterRenderSide,
@@ -203,11 +213,12 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 
 		virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser)
 		{
-			m_MessageRouterRenderSide->OnContextReleased(
-				browser,
-				browser->GetMainFrame(),
-				browser->GetMainFrame()->GetV8Context()
-			);
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
+			//m_MessageRouterRenderSide->OnContextReleased(
+			//	browser,
+			//	browser->GetMainFrame(),
+			//	browser->GetMainFrame()->GetV8Context()
+			//);
 
             if ( HTML5Plugin::gPlugin->m_refCEFFrame.get() == nullptr || HTML5Plugin::gPlugin->m_refCEFFrame->GetBrowser()->GetIdentifier() == browser->GetIdentifier() )
             {
@@ -219,6 +230,15 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 
         virtual bool OnBeforePopup( CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url, const CefString& target_frame_name, const CefPopupFeatures& popupFeatures, CefWindowInfo& windowInfo, CefRefPtr<CefClient>& client, CefBrowserSettings& settings, bool* no_javascript_access )
         {
+			DEBUG_PTR(browser->GetMainFrame());
+			DEBUG_PTR(frame);
+			DEBUG_PTR(windowInfo);
+			DEBUG_PTR(client);
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
+			DEBUG_PTR(frame->GetV8Context());
+			DEBUG_PTR(client->GetRenderHandler());
+			DEBUG_PTR(client->GetRequestHandler());
+
             return true; // Never allow Popups
         }
 

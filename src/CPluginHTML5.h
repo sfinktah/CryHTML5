@@ -16,6 +16,10 @@
 
 #include <cef_app.h>
 #include <cef_client.h>
+#include <cefclient/browser/osr_window_win.h>
+#include <cefclient/browser/osr_renderer.h>
+
+using namespace client;
 
 
 // from cef osr demo
@@ -77,6 +81,7 @@ namespace HTML5Plugin
 		string m_sCEFResourceDir; //!< path to resource directory
 		string m_sCEFLocalesDir;
 		string m_sCEFDebugURL;
+		CefRefPtr<CefApp> m_app;
 
 		CefRefPtr<CEFCryHandler> m_refCEFHandler;
 		CefRefPtr<CefRequestContext> m_refCEFRequestContext;
@@ -189,12 +194,6 @@ namespace HTML5Plugin
 		static int GetCefKeyboardModifiers(WPARAM wparam, LPARAM lparam);
 		static int GetCefMouseModifiers(WPARAM wparam);
 		static bool isKeyDown(WPARAM wparam);
-		//bool IsOverPopupWidget(int x, int y) const;
-		//int GetPopupXOffset() const;
-		//int GetPopupYOffset() const;
-		//void ApplyPopupOffset(int& x, int& y) const;
-
-		// from cef osr demo, uncomment as needed
 
 		// Show the popup window with correct parent and bounds in parent coordinates.
 		void ShowPopup(HWND parent_hwnd, int x, int y, size_t width, size_t height);
@@ -212,9 +211,8 @@ namespace HTML5Plugin
 	// private:
 		// Only allow deletion via scoped_refptr.
 		friend struct CefDeleteOnThread<TID_UI>;
-		//friend class base::RefCountedThreadSafe<OsrWindowWin, CefDeleteOnUIThread>;
+		friend class base::RefCountedThreadSafe<client::OsrWindowWin, CefDeleteOnUIThread>;
 
-		//~OsrWindowWin();
 
 		// Manage native window lifespan.
 		//void Create(HWND parent_hwnd, const RECT& rect);
@@ -243,10 +241,10 @@ namespace HTML5Plugin
 		bool OnEraseBkgnd();
 
 		// Manage popup bounds.
-		//bool IsOverPopupWidget(int x, int y) const;
-		//int GetPopupXOffset() const;
-		//int GetPopupYOffset() const;
-		//void ApplyPopupOffset(int& x, int& y) const;
+		bool IsOverPopupWidget(int x, int y) const;
+		int GetPopupXOffset() const;
+		int GetPopupYOffset() const;
+		void ApplyPopupOffset(int& x, int& y) const;
 
 		// ClientHandlerOsr::OsrDelegate methods.
 		void OnAfterCreated(CefRefPtr<CefBrowser> browser) /* OVERRIDE */;
@@ -296,7 +294,7 @@ namespace HTML5Plugin
 		// Delegate* delegate_;
 
 		// The below members are only accessed on the UI thread.
-		// OsrRenderer renderer_;
+		OsrRenderer renderer_;
 		HWND hwnd_;
 		HDC hdc_;
 		HGLRC hrc_;
@@ -337,6 +335,8 @@ namespace HTML5Plugin
 	extern D3DPlugin::IPluginD3D* gD3DSystem;
 	// extern CPluginD3D* gD3DSystem;
 
+	//private:
+		//~OsrWindowWin();
 }
 
 /**

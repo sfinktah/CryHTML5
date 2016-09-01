@@ -13,6 +13,7 @@
 // #include "Cry_Color.h"
 #include "Cry_Math.h"
 #include <d3d11.h>
+#include <Sfinktah/debug.h>
 
 //#include "../GameSDK/GameDll/MyFiles/Camera/MeasureTime.hpp"
 
@@ -404,6 +405,12 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
             //// HTML5Plugin::gPlugin->LogAlways( "OnPaint: %s, type(%d), %d, %dm %0x016p", SAFESTR( url.c_str() ), int( type ), width, height, buffer );
 
+			DEBUG_OUT("CEFRenderHandler::OnPaint");
+			DEBUG_PTR(browser);
+			DEBUG_PTR(browser->GetMainFrame());
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
+
+
             for ( auto iter = dirtyRects.begin(); iter != dirtyRects.end(); ++iter )
             {
                 dirtyarea( iter->x, iter->y, iter->width, iter->height );
@@ -415,6 +422,10 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
         virtual void OnCursorChange( CefRefPtr<CefBrowser> browser, CefCursorHandle cursor )
         {
+			DEBUG_OUT("CEFRenderHandler::OnCursorChange");
+			DEBUG_PTR(browser);
+			DEBUG_PTR(browser->GetMainFrame());
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
         }
 
         virtual void OnScrollOffsetChanged( CefRefPtr<CefBrowser> browser )
