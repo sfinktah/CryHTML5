@@ -23,10 +23,13 @@
 
 /** @brief CryENGINE & Direct3D renderer handler */
 class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEventListener
+
+
 {
     public:
         int _windowHeight; //!< the frame height in pixels
         int _windowWidth; //!< the frame width in pixels
+		CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
 
     private:
         const void* _buffer; //!< the CEF frame buffer (not synchronized to reduce overhead)
@@ -209,8 +212,8 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 			*/
 			
 			// sfink: not sure where windowheight and windowwidth are set, but changing them h ere
-			_windowWidth = 1280;
-			_windowHeight = 720;
+			_windowWidth = TEARLESS_WINDOW_WIDTH;
+			_windowHeight = TEARLESS_WINDOW_HEIGHT;
 
 			
 			// This snippet is from https://chromium.googlesource.com/external/angleproject/dx11proto/+/fc84fd6f076d504af33a78a906985ea2a2268346/src/libGLESv2/renderer/RenderTarget11.cpp
@@ -346,7 +349,10 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
                 {
                     HTML5Plugin::gPlugin->LogAlways( "Fail CreateShaderResourceView" );
                 }
-            }
+			}
+
+			CefMessageRouterConfig config;
+			m_MessageRouterRenderSide = CefMessageRouterRendererSide::Create(config);
         }
 
     public:

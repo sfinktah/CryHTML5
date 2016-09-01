@@ -4,16 +4,22 @@
 #pragma warning(default:4263 4264 4265 4266 4623 4624 4625 4626)
 #include <cef_app.h>
 #include <cef_client.h>
+#include <include/capi/cef_render_process_handler_capi.h>
 
 #include <CPluginHTML5.h>
 #include <CEFRenderHandler.hpp>
+#include <sfinktah/debug.h>
 
 // #include <CEFInputHandler.hpp>
 
+class CEFCryHandler; // : public CefClient, public CefLifeSpanHandler, public CefContextMenuHandler, public CefDialogHandler, public CefJSDialogHandler;
 /** @brief handle loading of web pages */
 class CEFCryLoadHandler : public CefLoadHandler
 {
     public:
+		
+		CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
+        CefRefPtr<CEFCryHandler> _cefClient; //!< the renderer handler
         virtual void OnLoadingStateChange( CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward )
         {
             std::string url = browser->GetMainFrame()->GetURL().ToString().c_str();
@@ -34,6 +40,13 @@ class CEFCryLoadHandler : public CefLoadHandler
 
             std::string url = browser->GetMainFrame()->GetURL().ToString().c_str();
             HTML5Plugin::gPlugin->LogAlways( "LoadEnd: %s, %d", SAFESTR( url.c_str() ), httpStatusCode );
+			//DEBUG_PTR(HTML5Plugin::gPlugin->m_refCEFHandler);
+			DEBUG_PTR(HTML5Plugin::gPlugin->m_refCEFBrowser);
+			DEBUG_PTR(_cefClient);
+			//DEBUG_PTR(_renderHandler->SendContextCreated);
+			//HTML5Plugin::gPlugin->m_refCEFBrowser  = browser; // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
+			_cefClient->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
+			//HTML5Plugin::gPlugin->m_refCEFHandler->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
         }
 
         virtual void OnLoadError( CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& errorText, const CefString& failedUrl )
@@ -55,6 +68,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 
     public:
         CefRefPtr<CEFCryRenderHandler> _renderHandler; //!< the renderer handler
+		CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
         // CEFCryInputHandler m_input; //!< the input handler
 
     public:
@@ -62,6 +76,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
         {
             _renderHandler = new CEFCryRenderHandler( windowWidth, windowHeight );
             _loadHandler = new CEFCryLoadHandler();
+			_loadHandler->_cefClient = this;
         };
 
         ~CEFCryHandler() { };
@@ -124,6 +139,24 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             return this;
         }
 
+		virtual int SendContextCreated(CefRefPtr<CefBrowser> browser ) {
+			DEBUG_PTR(browser);
+			DEBUG_PTR(browser->GetMainFrame());
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
+
+			if (!browser->GetMainFrame()->GetV8Context()) {
+				return 0;
+			}
+
+			DEBUG_OUT("m_MessageRouterRenderSide->OnContextCreated");
+			m_MessageRouterRenderSide->OnContextCreated(
+				browser,
+				browser->GetMainFrame(),
+				browser->GetMainFrame()->GetV8Context());
+
+			DEBUG_OUT("SendContextCreated");
+		}
+
         virtual void OnAfterCreated( CefRefPtr<CefBrowser> browser )
         {
             if ( HTML5Plugin::gPlugin->m_sCEFDebugURL.empty() )
@@ -133,6 +166,34 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
                 // and why not call this event while we're fucking at it too
                 HTML5Plugin::gPlugin->OnAfterCreated(browser); // Surely we must need more CefRefPtr's
 
+				//CefMessageRouterConfig config;
+				//m_MessageRouterRenderSide = CefMessageRouterRendererSide::Create(config);
+				//CefRefPtr<CefMessageRouterRendererSide> renderer_side_router_ = CefMessageRouterRendererSide::Create(config);
+				/*
+[Authority] CPluginHTML5::OnAfterCreated
+[Authority] binding_test::Handler created
+[Authority] AddHandler returned: 1
+[Authority] binding_test::Handler created
+[Authority] &_renderHandler: 0000028E06588040
+[Authority] &_renderHandler->m_MessageRouterRenderSide: 0000000000000000
+[Authority] m_MessageRouterRenderSide = _renderHandler->m_MessageRouterRenderSide
+[Authority] ???????: 0000028E06588040, ????????????????????e: 0000000000000000
+[Authority] &browser: 0000028E0660FA30
+[Authority] &browser->GetMainFrame(): 0000028E0660FE70
+[Authority] &browser->GetMainFrame()->GetV8Context(): 0000000000000000
+[Authority] m_MessageRouterRenderSide->OnContextCreated
+	*/
+
+				DEBUG_PTR(_renderHandler);
+				DEBUG_PTR(_renderHandler->m_MessageRouterRenderSide);
+				DEBUG_OUT("m_MessageRouterRenderSide = _renderHandler->m_MessageRouterRenderSide");
+				ASSIGN_CHECK(
+					m_MessageRouterRenderSide = _renderHandler->m_MessageRouterRenderSide,
+					_renderHandler,
+					_renderHandler->m_MessageRouterRenderSide
+				);
+
+
                 // HTML5Plugin::gPlugin->m_sCEFDebugURL = browser->GetHost()->GetDevToolsURL( false ).ToString().c_str(); // browser->GetHost()->GetDevToolsURL( false ).ToString();
                 HTML5Plugin::gPlugin->LogAlways( "Devtools URL: %s", HTML5Plugin::gPlugin->m_sCEFDebugURL.c_str() );
 
@@ -140,8 +201,14 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             }
         };
 
-        virtual void OnBeforeClose( CefRefPtr<CefBrowser> browser )
-        {
+		virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser)
+		{
+			m_MessageRouterRenderSide->OnContextReleased(
+				browser,
+				browser->GetMainFrame(),
+				browser->GetMainFrame()->GetV8Context()
+			);
+
             if ( HTML5Plugin::gPlugin->m_refCEFFrame.get() == nullptr || HTML5Plugin::gPlugin->m_refCEFFrame->GetBrowser()->GetIdentifier() == browser->GetIdentifier() )
             {
                 HTML5Plugin::gPlugin->m_sCEFDebugURL = "";
