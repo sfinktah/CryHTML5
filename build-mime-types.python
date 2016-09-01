@@ -1,0 +1,15 @@
+import mimetypes
+mimetypes.init()
+popular = [".eot", ".jpg", ".png", ".js", ".tiff", ".bmp", ".gif", ".dat",
+        ".cab", ".css", ".xml", ".php", ".exe", ".ico", ".psf", ".html",
+        ".msi", ".img", ".woff2", ".svg", ".mar", ".txt", ".vf", ".json",
+        ".woff", ".jpeg", ".aspx", ".crx", ".msp", ".data", ".zip", ".srf",
+        ".htm", ".bz2", ".jtp", ".gz", ".ttf", ".onewayhash", ".ashx", ".styl",
+        ".cgi", ".crxd", ".crt", ".mp4", ".gpg", ".iconpack", ".svc", ".pl",
+        ".swf", ".shieldpack", ".query", ".plist", ".pdf", ".cer", ".less",
+        ".deb", ".jhtml", ".atom", ".ipa", ".do", ".aac", ".shieldindex",
+        ".map", ".m3u8", ".com", ".action", ".mp3", ".asp", ".1472090700475",
+        ".styleproto", ".crl", ".otf", ".hpp", ".hawk", ".axd"]
+for ext in popular:
+    if ext in mimetypes.types_map:
+        print "case: \"%s\": m_sMime = \"%s\"; break" % (ext[1:], mimetypes.types_map[ext])
