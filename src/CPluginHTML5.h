@@ -27,6 +27,7 @@
 #include <cefclient/browser/client_handler_osr.h>
 #include <cefclient/browser/osr_dragdrop_win.h>
 #include <cefclient/browser/osr_renderer.h>
+#include <wrapper/cef_message_router.h>
 
 
 // end from cef osr demo
@@ -51,6 +52,19 @@ namespace HTML5Plugin
 		public IPluginHTML5
 	{
 	public:
+
+		// From client_handler.h
+		CefRefPtr<CefMessageRouterBrowserSide> message_router_;
+		// Manages the registration and delivery of resources.
+		CefRefPtr<CefResourceManager> resource_manager_;
+		typedef std::set<CefMessageRouterBrowserSide::Handler*> MessageHandlerSet;
+		int browser_count_;
+		// Set of Handlers registered with the message router.
+		MessageHandlerSet message_handler_set_;
+		// End from client_handler.h
+
+
+
 		CPluginHTML5();
 		~CPluginHTML5();
 		float m_deviceScaleFactor;
@@ -236,6 +250,8 @@ namespace HTML5Plugin
 
 		// ClientHandlerOsr::OsrDelegate methods.
 		void OnAfterCreated(CefRefPtr<CefBrowser> browser) /* OVERRIDE */;
+		void AnotherMessageRouter();
+		void CreateMessageRouter();
 		void OnBeforeClose(CefRefPtr<CefBrowser> browser) /* OVERRIDE */;
 		bool GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect) /* OVERRIDE */;
 		bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) /* OVERRIDE */;

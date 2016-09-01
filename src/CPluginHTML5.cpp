@@ -1,8 +1,9 @@
 /* CryHTML5 - for licensing and copyright see license.txt */
+#include "../../../../dll/src/AuthorityProjectConfig.h"
 
 #include "TwSimpleDX11.h"
 #include <StdAfx.h>
-#include <CPluginHTML5.h>
+#include "CPluginHTML5.h"
 #include <CPluginD3D.h>
 
 
@@ -18,7 +19,11 @@
 #include <cefclient/browser/main_message_loop.h>
 #include <cefclient/browser/resource.h>
 #include <cefclient/browser/util_win.h>
-
+// #include "C:\Users\sfink\Documents\Visual Studio 2015\Projects\authority-master\dll\src\Tearless\CEF\libcef_dll\wrapper\cef_message_router.cc"
+// #include "cefclient/browser/binding_test.h"
+#include "../../../../dll/src/Sfinktah/debug.h"
+//#include <cefclient/browser/client_handler.h>
+#include "binding.h"
 
 // Return the window's user data pointer.
 template <typename T>
@@ -29,15 +34,17 @@ T GetUserDataPtr(HWND hWnd) {
 
 // end from cef osr demo
 
+#ifdef ENABLE_TEARLESS
 #pragma comment(lib, "libcef")
 #pragma comment(lib, "libcef_dll_wrapper")
+#endif
 
 class CCamera;
 
 namespace HTML5Plugin
 {
-    CPluginHTML5* gPlugin = NULL;
-    D3DPlugin::IPluginD3D* gD3DSystem = NULL;
+	CPluginHTML5* gPlugin = NULL;
+	D3DPlugin::IPluginD3D* gD3DSystem = NULL;
 	// D3DPlugin::IPluginD3D * gPlugin = NULL;
 
 	CPluginHTML5::CPluginHTML5() :
@@ -49,519 +56,520 @@ namespace HTML5Plugin
 		gD3DSystem = nullptr;
 	}
 
-    CPluginHTML5::~CPluginHTML5()
-    {
-        Release( true );
+	CPluginHTML5::~CPluginHTML5()
+	{
+		Release(true);
 
-        gPlugin = NULL;
-    }
+		gPlugin = NULL;
+	}
 
-    bool CPluginHTML5::Release( bool bForce )
-    {
-        bool bRet = true;
-        bool bWasInitialized = m_bIsFullyInitialized; // Will be reset by base class so backup
+	bool CPluginHTML5::Release(bool bForce)
+	{
+		bool bRet = true;
+		bool bWasInitialized = m_bIsFullyInitialized; // Will be reset by base class so backup
 
-        if ( !m_bCanUnload )
-        {
-            // Note: Type Unregistration will be automatically done by the Base class (Through RegisterTypes)
-            // Should be called while Game is still active otherwise there might be leaks/problems
-            bRet = CPluginBase::Release( bForce );
+		if (!m_bCanUnload)
+		{
+			// Note: Type Unregistration will be automatically done by the Base class (Through RegisterTypes)
+			// Should be called while Game is still active otherwise there might be leaks/problems
+			bRet = CPluginBase::Release(bForce);
 
-            if ( bRet )
-            {
-                ShutdownDependencies();
+			if (bRet)
+			{
+				ShutdownDependencies();
 
-                if ( bWasInitialized )
-                {
-                    // TODO: Cleanup stuff that can only be cleaned up if the plugin was initialized
+				if (bWasInitialized)
+				{
+					// TODO: Cleanup stuff that can only be cleaned up if the plugin was initialized
 
-                }
+				}
 
-                // Cleanup like this always (since the class is static its cleaned up when the dll is unloaded)
-                gPluginManager->UnloadPlugin( GetName() );
+				// Cleanup like this always (since the class is static its cleaned up when the dll is unloaded)
+				gPluginManager->UnloadPlugin(GetName());
 
-                // Allow Plugin Manager garbage collector to unload this plugin
-                AllowDllUnload();
-            }
-        }
+				// Allow Plugin Manager garbage collector to unload this plugin
+				AllowDllUnload();
+			}
+		}
 
-        return bRet;
-    };
+		return bRet;
+	};
 
-    bool CPluginHTML5::Init( SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory )
-    // bool CPluginHTML5::Init()
-    {
-        bool bSuccess = true;
+	bool CPluginHTML5::Init(SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory)
+		// bool CPluginHTML5::Init()
+	{
+		bool bSuccess = true;
 
-        // gPluginManager = ( PluginManager::IPluginManager* )pPluginManager->GetConcreteInterface( NULL );
-        // bSuccess = CPluginBase::Init( env, startupParams, pPluginManager, sPluginDirectory );
+		// gPluginManager = ( PluginManager::IPluginManager* )pPluginManager->GetConcreteInterface( NULL );
+		// bSuccess = CPluginBase::Init( env, startupParams, pPluginManager, sPluginDirectory );
 
-        return bSuccess;
-    }
+		return bSuccess;
+	}
 
-    void Command_DevTools( IConsoleCmdArgs* pArgs )
-    {
-        gPlugin->ShowDevTools();
-    };
+	void Command_DevTools(IConsoleCmdArgs* pArgs)
+	{
+		gPlugin->ShowDevTools();
+	};
 
-    void Command_URL( IConsoleCmdArgs* pArgs )
-    {
+	void Command_URL(IConsoleCmdArgs* pArgs)
+	{
 #ifdef WE_HAD_A_CONSOLE
-        if ( pArgs->GetArgCount() > 1 )
-        {
+		if (pArgs->GetArgCount() > 1)
+		{
 #undef GetCommandLine
-            string sText( pArgs->GetCommandLine() );
+			string sText(pArgs->GetCommandLine());
 
-            // read over the parameters
-            size_t nOffset = sText.find_first_of( ' ' )   + 1;
+			// read over the parameters
+			size_t nOffset = sText.find_first_of(' ') + 1;
 
-            // remove parameters
-            sText = sText.Mid( nOffset ).Trim();
+			// remove parameters
+			sText = sText.Mid(nOffset).Trim();
 
-            // delay the command
-            if ( sText.length() > 0 )
-            {
-                gPlugin->SetURL( PluginManager::UTF82UCS2( sText ) );
-            }
-        }
+			// delay the command
+			if (sText.length() > 0)
+			{
+				gPlugin->SetURL(PluginManager::UTF82UCS2(sText));
+			}
+		}
 #endif
-    };
+	};
 
-    void Command_JS( IConsoleCmdArgs* pArgs )
-    {
+	void Command_JS(IConsoleCmdArgs* pArgs)
+	{
 #ifdef WE_HAD_A_CONSOLE
-        if ( pArgs->GetArgCount() > 1 )
-        {
+		if (pArgs->GetArgCount() > 1)
+		{
 #undef GetCommandLine
-            string sText( pArgs->GetCommandLine() );
+			string sText(pArgs->GetCommandLine());
 
-            // read over the parameters
-            size_t nOffset = sText.find_first_of( ' ' )   + 1;
+			// read over the parameters
+			size_t nOffset = sText.find_first_of(' ') + 1;
 
-            // remove parameters
-            sText = sText.Mid( nOffset ).Trim();
+			// remove parameters
+			sText = sText.Mid(nOffset).Trim();
 
-            // delay the command
-            if ( sText.length() > 0 )
-            {
-                gPlugin->ExecuteJS( PluginManager::UTF82UCS2( sText ) );
-            }
-        }
+			// delay the command
+			if (sText.length() > 0)
+			{
+				gPlugin->ExecuteJS(PluginManager::UTF82UCS2(sText));
+			}
+		}
 #endif
-    };
+	};
 
-    void Command_Input( IConsoleCmdArgs* pArgs )
-    {
+	void Command_Input(IConsoleCmdArgs* pArgs)
+	{
 #ifdef WE_HAD_A_CONSOLE
-        if ( pArgs->GetArgCount() == 2 )
-        {
-            gPlugin->SetInputMode( PluginManager::ParseString<int>( pArgs->GetArg( 1 ) ) );
-        }
+		if (pArgs->GetArgCount() == 2)
+		{
+			gPlugin->SetInputMode(PluginManager::ParseString<int>(pArgs->GetArg(1)));
+		}
 
-        else if ( pArgs->GetArgCount() == 3 )
-        {
-            gPlugin->SetInputMode( PluginManager::ParseString<int>( pArgs->GetArg( 1 ) ), PluginManager::ParseString<bool>( pArgs->GetArg( 2 ) ) );
-        }
+		else if (pArgs->GetArgCount() == 3)
+		{
+			gPlugin->SetInputMode(PluginManager::ParseString<int>(pArgs->GetArg(1)), PluginManager::ParseString<bool>(pArgs->GetArg(2)));
+		}
 #endif
-    };
+	};
 
-    bool CPluginHTML5::RegisterTypes( int nFactoryType, bool bUnregister )
-    {
+	bool CPluginHTML5::RegisterTypes(int nFactoryType, bool bUnregister)
+	{
 		bool bRet = TRUE; // or false, who knows
 #ifdef WE_CARED
-		// Note: Autoregister Flownodes will be automatically registered by the Base class
-        bool bRet = CPluginBase::RegisterTypes( nFactoryType, bUnregister );
+						  // Note: Autoregister Flownodes will be automatically registered by the Base class
+		bool bRet = CPluginBase::RegisterTypes(nFactoryType, bUnregister);
 
-        using namespace PluginManager;
-        eFactoryType enFactoryType = eFactoryType( nFactoryType );
+		using namespace PluginManager;
+		eFactoryType enFactoryType = eFactoryType(nFactoryType);
 
-        if ( bRet )
-        {
-            if ( gEnv && gEnv->pSystem && !gEnv->pSystem->IsQuitting() )
-            {
-                // CVars
-                if ( gEnv->pConsole && ( enFactoryType == FT_All || enFactoryType == FT_CVar ) )
-                {
-                    if ( !bUnregister )
-                    {
-                        REGISTER_CVAR( cm5_active, 1.0f, VF_NULL, "CryHTML5 Rendering and systems active" );
-                        REGISTER_CVAR( cm5_alphatest, 0.3f, VF_NULL, "CryHTML5 Alpha test threshold for cursor" );
-                    }
+		if (bRet)
+		{
+			if (gEnv && gEnv->pSystem && !gEnv->pSystem->IsQuitting())
+			{
+				// CVars
+				if (gEnv->pConsole && (enFactoryType == FT_All || enFactoryType == FT_CVar))
+				{
+					if (!bUnregister)
+					{
+						REGISTER_CVAR(cm5_active, 1.0f, VF_NULL, "CryHTML5 Rendering and systems active");
+						REGISTER_CVAR(cm5_alphatest, 0.3f, VF_NULL, "CryHTML5 Alpha test threshold for cursor");
+					}
 
-                    else
-                    {
-                        gEnv->pConsole->UnregisterVariable( "cm5_active", true );
-                        gEnv->pConsole->UnregisterVariable( "cm5_alphatest", true );
-                    }
-                }
+					else
+					{
+						gEnv->pConsole->UnregisterVariable("cm5_active", true);
+						gEnv->pConsole->UnregisterVariable("cm5_alphatest", true);
+					}
+				}
 
-                // CVars Commands
-                if ( gEnv->pConsole && ( enFactoryType == FT_All || enFactoryType == FT_CVarCommand ) )
-                {
-                    if ( !bUnregister )
-                    {
-                        gEnv->pConsole->AddCommand( "cm5_devtools", Command_DevTools, VF_NULL, "Open the CryHTML5 DevTools" );
-                        gEnv->pConsole->AddCommand( "cm5_url", Command_URL, VF_NULL, "Open the URL" );
-                        gEnv->pConsole->AddCommand( "cm5_js", Command_JS, VF_NULL, "Execute the JavaScript" );
-                        gEnv->pConsole->AddCommand( "cm5_input", Command_Input, VF_NULL, "Set Input mode" );
-                    }
+				// CVars Commands
+				if (gEnv->pConsole && (enFactoryType == FT_All || enFactoryType == FT_CVarCommand))
+				{
+					if (!bUnregister)
+					{
+						gEnv->pConsole->AddCommand("cm5_devtools", Command_DevTools, VF_NULL, "Open the CryHTML5 DevTools");
+						gEnv->pConsole->AddCommand("cm5_url", Command_URL, VF_NULL, "Open the URL");
+						gEnv->pConsole->AddCommand("cm5_js", Command_JS, VF_NULL, "Execute the JavaScript");
+						gEnv->pConsole->AddCommand("cm5_input", Command_Input, VF_NULL, "Set Input mode");
+					}
 
-                    else
-                    {
-                        gEnv->pConsole->RemoveCommand( "cm5_devtools" );
-                        gEnv->pConsole->RemoveCommand( "cm5_url" );
-                        gEnv->pConsole->RemoveCommand( "cm5_js" );
-                        gEnv->pConsole->RemoveCommand( "cm5_input" );
-                    }
-                }
-            }
-        }
+					else
+					{
+						gEnv->pConsole->RemoveCommand("cm5_devtools");
+						gEnv->pConsole->RemoveCommand("cm5_url");
+						gEnv->pConsole->RemoveCommand("cm5_js");
+						gEnv->pConsole->RemoveCommand("cm5_input");
+					}
+				}
+			}
+		}
 
 #endif
-        return bRet;
-    }
+		return bRet;
+	}
 
-    const char* CPluginHTML5::ListCVars() const
-    {
-        return "..."; // TODO: Enter CVARs/Commands here if you have some
-    }
+	const char* CPluginHTML5::GetStatus() const
+	{
+		return "OK";
+	}
 
-    const char* CPluginHTML5::GetStatus() const
-    {
-        return "OK";
-    }
+	const char* CPluginHTML5::ListCVars() const
+	{
+		return "..."; // TODO: Enter CVARs/Commands here if you have some
+	}
 
-    bool CPluginHTML5::CheckDependencies()const
-    {
-        //Check For The Existence Of All Dependencies Here.
-        bool bSuccess = CPluginBase::CheckDependencies();
 
-        if ( bSuccess )
-        {
-            bSuccess = !!PluginManager::safeGetPluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
-        }
+	bool CPluginHTML5::CheckDependencies()const
+	{
+		//Check For The Existence Of All Dependencies Here.
+		bool bSuccess = CPluginBase::CheckDependencies();
 
-        return bSuccess;
-    }
+		if (bSuccess)
+		{
+			bSuccess = !!PluginManager::safeGetPluginConcreteInterface<D3DPlugin::IPluginD3D*>("D3D");
+		}
 
-    bool CPluginHTML5::InitDependencies()
-    {
-        //Initialize All Dependencies Here.
-        bool bSuccess = true;
+		return bSuccess;
+	}
 
-        bSuccess = InitD3DPlugin();
+	bool CPluginHTML5::InitDependencies()
+	{
+		//Initialize All Dependencies Here.
+		bool bSuccess = true;
 
-        HTML5Plugin::gPlugin->LogAlways( "InitD3DPlugin %s ", bSuccess ? "success" : "failed" );
+		bSuccess = InitD3DPlugin();
 
-        if ( bSuccess )
-        {
-            bSuccess = InitializeCEF();
-        }
+		HTML5Plugin::gPlugin->LogAlways("InitD3DPlugin %s ", bSuccess ? "success" : "failed");
 
-        if ( bSuccess )
-        {
-            bSuccess = CPluginBase::InitDependencies();
-        }
+		if (bSuccess)
+		{
+			bSuccess = InitializeCEF();
+		}
 
-        return bSuccess;
-    }
+		if (bSuccess)
+		{
+			bSuccess = CPluginBase::InitDependencies();
+		}
 
-    void CPluginHTML5::ShutdownDependencies()
-    {
-        // Shut Down All Dependencies Here.
-        ShutdownD3DPlugin();
+		return bSuccess;
+	}
 
-        // End
-        ShutdownCEF();
-    }
+	void CPluginHTML5::ShutdownCEF()
+	{
+		gPlugin->LogAlways("Shutting down");
 
-    bool CPluginHTML5::InitD3DPlugin()
-    {
-        //Tells This Instance To Depend On The D3D Plug-in.
-        // gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+		// m_refCEFHandler->m_input.UnregisterListeners();
+
+		m_refCEFFrame = nullptr;
+		m_refCEFHandler = nullptr;
+		m_refCEFRequestContext = nullptr;
+
+		CefShutdown();
+
+		gPlugin->LogAlways("Closed");
+	}
+
+	void CPluginHTML5::ShutdownDependencies()
+	{
+		// Shut Down All Dependencies Here.
+		ShutdownD3DPlugin();
+
+		// End
+		ShutdownCEF();
+	}
+
+	bool CPluginHTML5::InitD3DPlugin()
+	{
+		//Tells This Instance To Depend On The D3D Plug-in.
+		// gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
 
 		static D3DPlugin::CPluginD3D modulePlugin;
 		D3DPlugin::gPlugin = &modulePlugin;
 		D3DPlugin::gPlugin->InitWithoutPluginManager(); // modulePlugin.InitWithoutPluginManager();
 
-		// IPluginD3DEx* m_pDXSystem;
-		/*
-		void* GetConcreteInterface( const char* sInterfaceVersion )
-		{
-			return static_cast <IPluginD3D*>( m_pDXSystem );
-		};
+														// IPluginD3DEx* m_pDXSystem;
+														/*
+														void* GetConcreteInterface( const char* sInterfaceVersion )
+														{
+														return static_cast <IPluginD3D*>( m_pDXSystem );
+														};
 
-		template<typename tCIFace>
-		static tCIFace safeUsePluginConcreteInterface( const char* sPlugin, const char* sVersion = NULL )
-		{
-			IPluginBase* pBase = gPluginManager ? gPluginManager->GetPluginByName( sPlugin ) : NULL;
-			tCIFace pPlugin = static_cast<tCIFace>( pBase ? pBase->GetConcreteInterface( sVersion ) : NULL );
+														template<typename tCIFace>
+														static tCIFace safeUsePluginConcreteInterface( const char* sPlugin, const char* sVersion = NULL )
+														{
+														IPluginBase* pBase = gPluginManager ? gPluginManager->GetPluginByName( sPlugin ) : NULL;
+														tCIFace pPlugin = static_cast<tCIFace>( pBase ? pBase->GetConcreteInterface( sVersion ) : NULL );
 
-			if ( pPlugin )
-			{
-				pBase->AddRef();
-			}
+														if ( pPlugin )
+														{
+														pBase->AddRef();
+														}
 
-			return pPlugin;
-		};
+														return pPlugin;
+														};
 
-		*/
+														*/
 
-        // gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+														// gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
 		gD3DSystem = static_cast <D3DPlugin::IPluginD3D*>(modulePlugin.GetConcreteInterface(NULL));
 
 		// When to init? And as what?
 		// Apparently we must init before assigned gD3DSystem, else we will abort on the check beneath.
 
-        //If We Could Not Resolve The D3D Dependency Then Return False.
-        if ( !gD3DSystem )
-        {
-            gPlugin->LogError( "CPluginHTML5::InitD3DPlugin(): Failed To Get The D3D Plug-in (Plugin_D3D). This Plug-in (%s) Depends On The D3D Plug-in (Plugin_D3D).", GetName() );
-            return false;
-        }
+		//If We Could Not Resolve The D3D Dependency Then Return False.
+		if (!gD3DSystem)
+		{
+			gPlugin->LogError("CPluginHTML5::InitD3DPlugin(): Failed To Get The D3D Plug-in (Plugin_D3D). This Plug-in (%s) Depends On The D3D Plug-in (Plugin_D3D).", GetName());
+			return false;
+		}
 
-        else
-        {
+		else
+		{
 			gD3DSystem->SetDevice(g_D3DDev);
 			gD3DSystem->SetDeviceContext(g_D3DDevCtx);
 			gD3DSystem->SetSwapChain(g_SwapChain);
 
-            gD3DSystem->GetDevice(); // start search if isn't already found
-        }
+			gD3DSystem->GetDevice(); // start search if isn't already found
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    void CPluginHTML5::ShutdownD3DPlugin()
-    {
-        if ( gD3DSystem )
-        {
-            // Do not release the listeners !!...
+	void CPluginHTML5::ShutdownD3DPlugin()
+	{
+		if (gD3DSystem)
+		{
+			// Do not release the listeners !!...
 
-            //Un-Registers This Instance From The D3D Plug-in.
-            PluginManager::safeReleasePlugin( "D3D", gD3DSystem );
-        }
-    }
+			//Un-Registers This Instance From The D3D Plug-in.
+			PluginManager::safeReleasePlugin("D3D", gD3DSystem);
+		}
+	}
 
-    bool CPluginHTML5::InitializeCEF()
-    {
-        // Initialize Paths
-        m_sCEFBrowserProcess = PluginManager::pathWithSeperator( gPluginManager->GetPluginDirectory( GetName() ) ) + "cefclient.exe";
-        m_sCEFLog = PluginManager::pathWithSeperator( gPluginManager->GetDirectoryRoot() ) + "CryHTML5.log";
-        m_sCEFResourceDir = gPluginManager->GetPluginDirectory( GetName() );
-        m_sCEFLocalesDir = PluginManager::pathWithSeperator( gPluginManager->GetPluginDirectory( GetName() ) ) + "locales";
+	bool CPluginHTML5::InitializeCEF()
+	{
+		// Initialize Paths
+		m_sCEFBrowserProcess = PluginManager::pathWithSeperator(gPluginManager->GetPluginDirectory(GetName())) + "cefclient.exe";
+		m_sCEFLog = PluginManager::pathWithSeperator(gPluginManager->GetDirectoryRoot()) + "CryHTML5.log";
+		m_sCEFResourceDir = gPluginManager->GetPluginDirectory(GetName());
+		m_sCEFLocalesDir = PluginManager::pathWithSeperator(gPluginManager->GetPluginDirectory(GetName())) + "locales";
 
-        // Initialize Settings
-        CefSettings settings;
-        CefString( &settings.browser_subprocess_path ).FromASCII( m_sCEFBrowserProcess.c_str() );
-        CefString( &settings.log_file ).FromASCII( m_sCEFLog.c_str() );
-        CefString( &settings.resources_dir_path ).FromASCII( m_sCEFResourceDir.c_str() );
-        CefString( &settings.locales_dir_path ).FromASCII( m_sCEFLocalesDir.c_str() );
+		// Initialize Settings
+		CefSettings settings;
+		CefString(&settings.browser_subprocess_path).FromASCII(m_sCEFBrowserProcess.c_str());
+		CefString(&settings.log_file).FromASCII(m_sCEFLog.c_str());
+		CefString(&settings.resources_dir_path).FromASCII(m_sCEFResourceDir.c_str());
+		CefString(&settings.locales_dir_path).FromASCII(m_sCEFLocalesDir.c_str());
 
-        settings.command_line_args_disabled = true;
-        settings.multi_threaded_message_loop = true;
-        settings.log_severity = LOGSEVERITY_WARNING;
-        settings.remote_debugging_port = 8012;
-        settings.background_color = CefColorSetARGB( 0, 0, 0, 0 );
+		settings.command_line_args_disabled = true;
+		settings.multi_threaded_message_loop = true;
+		settings.log_severity = LOGSEVERITY_WARNING;
+		settings.remote_debugging_port = 7574;
+		settings.background_color = CefColorSetARGB(0, 0, 0, 0);
 
-        // Now initialize CEF
-        CefMainArgs main_args;
-        bool bSuccess = CefInitialize( main_args, settings, NULL, NULL );
-        HTML5Plugin::gPlugin->LogAlways( "Initialize %s ", bSuccess ? "success" : "failed" );
+		// Now initialize CEF
+		CefMainArgs main_args;
+		bool bSuccess = CefInitialize(main_args, settings, NULL, NULL);
+		HTML5Plugin::gPlugin->LogAlways("Initialize %s ", bSuccess ? "success" : "failed");
 
-        // Initialize Components
-        if ( bSuccess )
-        {
-            CefRegisterSchemeHandlerFactory( "cry", "cry", new CEFCryPakHandlerFactory() );
+		// Initialize Components
+		if (bSuccess)
+		{
+			CefRegisterSchemeHandlerFactory("cry", "cry", new CEFCryPakHandlerFactory());
 
-            // Initialize a Browser
-            bSuccess = InitializeCEFBrowser();
-        }
+			// Initialize a Browser
+			bSuccess = InitializeCEFBrowser();
+		}
 
-        return bSuccess;
-    }
+		return bSuccess;
+	}
 
-    bool CPluginHTML5::InitializeCEFBrowser()
-    {
-        // Client Handler
-        m_refCEFHandler = new CEFCryHandler( 1280, 720 );
+	bool CPluginHTML5::InitializeCEFBrowser()
+	{
+		// Client Handler
+		m_refCEFHandler = new CEFCryHandler(TEARLESS_WINDOW_WIDTH, TEARLESS_WINDOW_HEIGHT);
 
-        // Window Information
-        CefWindowInfo info;
+		// Window Information
+		CefWindowInfo info;
 
 		info.transparent_painting_enabled = TRUE;
 		info.windowless_rendering_enabled = TRUE;
-		
-        // info.SetAsOffScreen( HWND( gEnv->pRenderer->GetHWND() ) ); //info.SetAsOffScreen( NULL );
-        // info.SetTransparentPainting( TRUE );
 
-        // Register Listener for Render Handler
-        gD3DSystem->RegisterListener( m_refCEFHandler->_renderHandler.get() );
+		// info.SetAsOffScreen( HWND( gEnv->pRenderer->GetHWND() ) ); //info.SetAsOffScreen( NULL );
+		// info.SetTransparentPainting( TRUE );
 
-        // Browser Settings
-        CefBrowserSettings browserSettings;
-        //browserSettings.accelerated_compositing = STATE_ENABLED; // For OSR always software is used this is an CEF restriction.
-        //browserSettings.webgl = STATE_ENABLED;
+		// Register Listener for Render Handler
+		gD3DSystem->RegisterListener(m_refCEFHandler->_renderHandler.get());
 
-        m_refCEFRequestContext = CefRequestContext::GetGlobalContext();
+		// Browser Settings
+		CefBrowserSettings browserSettings;
+		//browserSettings.accelerated_compositing = STATE_ENABLED; // For OSR always software is used this is an CEF restriction.
+		//browserSettings.webgl = STATE_ENABLED;
 
-        bool bSuccess = CefBrowserHost::CreateBrowser( info, m_refCEFHandler.get(), "cry://UI/TestUI.html", browserSettings, nullptr );
-        //bool bSuccess = CefBrowserHost::CreateBrowser( info, m_refCEFHandler.get(), "http://www.youtube.com/watch?v=3MteSlpxCpo", browserSettings, nullptr );
-        //bool bSuccess = CefBrowserHost::CreateBrowser( info, m_refCEFHandler.get(), "http://webglsamples.googlecode.com/hg/aquarium/aquarium.html", browserSettings, nullptr );
-        //bool bSuccess = CefBrowserHost::CreateBrowser( info, g_handler.get(), "http://www.google.com", browserSettings, nullptr );
+		m_refCEFRequestContext = CefRequestContext::GetGlobalContext();
 
-        HTML5Plugin::gPlugin->LogAlways( "CreateBrowser %s", bSuccess ? "success" : "failed" );
-        return bSuccess;
-    }
+		bool bSuccess = CefBrowserHost::CreateBrowser(info, m_refCEFHandler.get(), "cry://UI/TestUI.html", browserSettings, nullptr);
+		//bool bSuccess = CefBrowserHost::CreateBrowser( info, m_refCEFHandler.get(), "http://www.youtube.com/watch?v=3MteSlpxCpo", browserSettings, nullptr );
+		//bool bSuccess = CefBrowserHost::CreateBrowser( info, m_refCEFHandler.get(), "http://webglsamples.googlecode.com/hg/aquarium/aquarium.html", browserSettings, nullptr );
+		//bool bSuccess = CefBrowserHost::CreateBrowser( info, g_handler.get(), "http://www.google.com", browserSettings, nullptr );
 
-    void CPluginHTML5::ShowDevTools()
-    {
-        if ( !m_sCEFDebugURL.empty() )
-        {
-            LaunchExternalBrowser( m_sCEFDebugURL );
-        }
-    }
+		HTML5Plugin::gPlugin->LogAlways("CreateBrowser %s", bSuccess ? "success" : "failed");
+		return bSuccess;
+	}
 
-    void CPluginHTML5::LaunchExternalBrowser( const string& url )
-    {
-        if ( CefCurrentlyOn( TID_PROCESS_LAUNCHER ) )
-        {
-            // Retrieve the current executable path.
-            CefString file_exe( gPlugin->m_sCEFBrowserProcess );
+	void CPluginHTML5::ShowDevTools()
+	{
+		if (!m_sCEFDebugURL.empty())
+		{
+			LaunchExternalBrowser(m_sCEFDebugURL);
+		}
+	}
 
-            // Create the command line.
-            CefRefPtr<CefCommandLine> command_line =
-                CefCommandLine::CreateCommandLine();
-            command_line->SetProgram( file_exe );
-            command_line->AppendSwitchWithValue( "url", url.c_str() );
+	void CPluginHTML5::LaunchExternalBrowser(const string& url)
+	{
+		if (CefCurrentlyOn(TID_PROCESS_LAUNCHER))
+		{
+			// Retrieve the current executable path.
+			CefString file_exe(gPlugin->m_sCEFBrowserProcess);
 
-            // Launch the process.
-            CefLaunchProcess( command_line );
-        }
+			// Create the command line.
+			CefRefPtr<CefCommandLine> command_line =
+				CefCommandLine::CreateCommandLine();
+			command_line->SetProgram(file_exe);
+			command_line->AppendSwitchWithValue("url", url.c_str());
 
-        else
-        {
-            // Execute on the PROCESS_LAUNCHER thread.
-            CefPostTask( TID_PROCESS_LAUNCHER, NewCefRunnableFunction( &CPluginHTML5::LaunchExternalBrowser, url ) );
-        }
-    }
+			// Launch the process.
+			CefLaunchProcess(command_line);
+		}
 
-    void CPluginHTML5::ShutdownCEF()
-    {
-        gPlugin->LogAlways( "Shutting down" );
+		else
+		{
+			// Execute on the PROCESS_LAUNCHER thread.
+			CefPostTask(TID_PROCESS_LAUNCHER, NewCefRunnableFunction(&CPluginHTML5::LaunchExternalBrowser, url));
+		}
+	}
 
-        // m_refCEFHandler->m_input.UnregisterListeners();
+	bool CPluginHTML5::SetURL(const wchar_t* sURL)
+	{
+		if (m_refCEFFrame.get() != nullptr)
+		{
+			m_refCEFFrame->LoadURL(sURL);
+			return true;
+		}
 
-        m_refCEFFrame = nullptr;
-        m_refCEFHandler = nullptr;
-        m_refCEFRequestContext = nullptr;
+		return false;
+	}
 
-        CefShutdown();
+	bool CPluginHTML5::ExecuteJS(const wchar_t* sJS)
+	{
+		if (m_refCEFFrame.get() != nullptr)
+		{
+			m_refCEFFrame->ExecuteJavaScript(sJS, CefString("CryHTML"), 0);
+			return true;
+		}
 
-        gPlugin->LogAlways( "Closed" );
-    }
-
-    bool CPluginHTML5::SetURL( const wchar_t* sURL )
-    {
-        if ( m_refCEFFrame.get() != nullptr )
-        {
-            m_refCEFFrame->LoadURL( sURL );
-            return true;
-        }
-
-        return false;
-    }
-
-    bool CPluginHTML5::ExecuteJS( const wchar_t* sJS )
-    {
-        if ( m_refCEFFrame.get() != nullptr )
-        {
-            m_refCEFFrame->ExecuteJavaScript( sJS, CefString( "CryHTML" ), 0 );
-            return true;
-        }
-
-        return false;
-    }
+		return false;
+	}
 
 #ifndef __FUCK_U
-    bool CPluginHTML5::WorldPosToScreenPos( CCamera cam, Vec3 vWorld, Vec3& vScreen, Vec3 vOffset /*= Vec3( ZERO ) */ )
-    {
-        if ( m_refCEFHandler.get() != nullptr && m_refCEFHandler->_renderHandler.get() != nullptr )
-        {
-            // get current camera matrix
-            const Matrix34& camMat = cam.GetMatrix();
+	bool CPluginHTML5::WorldPosToScreenPos(CCamera cam, Vec3 vWorld, Vec3& vScreen, Vec3 vOffset /*= Vec3( ZERO ) */)
+	{
+		if (m_refCEFHandler.get() != nullptr && m_refCEFHandler->_renderHandler.get() != nullptr)
+		{
+			// get current camera matrix
+			const Matrix34& camMat = cam.GetMatrix();
 
-            // add offset to position
-            const Vec3 vFaceingPos = camMat.GetTranslation() - camMat.GetColumn1() * 1000.f;
-            const Vec3 vDir = ( vWorld - vFaceingPos ).GetNormalizedFast();
-            const Vec3 vOffsetX = vDir.Cross( Vec3Constants<float>::fVec3_OneZ ).GetNormalizedFast() * vOffset.x;
-            const Vec3 vOffsetY = vDir * vOffset.y;
-            const Vec3 vOffsetZ = Vec3( 0, 0, vOffset.z );
-            vWorld += vOffsetX + vOffsetY + vOffsetZ;
+			// add offset to position
+			const Vec3 vFaceingPos = camMat.GetTranslation() - camMat.GetColumn1() * 1000.f;
+			const Vec3 vDir = (vWorld - vFaceingPos).GetNormalizedFast();
+			const Vec3 vOffsetX = vDir.Cross(Vec3Constants<float>::fVec3_OneZ).GetNormalizedFast() * vOffset.x;
+			const Vec3 vOffsetY = vDir * vOffset.y;
+			const Vec3 vOffsetZ = Vec3(0, 0, vOffset.z);
+			vWorld += vOffsetX + vOffsetY + vOffsetZ;
 
-            // calculate screen x,y coordinates
-            cam.SetMatrix( camMat );
-            cam.Project( vWorld, vScreen );
-            ScaleCoordinates( vScreen.x, vScreen.y, vScreen.x, vScreen.y, false, true );
+			// calculate screen x,y coordinates
+			cam.SetMatrix(camMat);
+			cam.Project(vWorld, vScreen);
+			ScaleCoordinates(vScreen.x, vScreen.y, vScreen.x, vScreen.y, false, true);
 
-            // store depth in z
-            vScreen.z = ( camMat.GetTranslation() - vWorld ).GetLength();
+			// store depth in z
+			vScreen.z = (camMat.GetTranslation() - vWorld).GetLength();
 
-            return true;
-        }
+			return true;
+		}
 
-        return false;
-    }
+		return false;
+	}
 #endif
 
-    void CPluginHTML5::ScaleCoordinates( float fX, float fY, float& foX, float& foY, bool bLimit /*= false*/, bool bCERenderer /*= true */ )
-    {
-        if ( m_refCEFHandler.get() != nullptr )
-        {
-            m_refCEFHandler->_renderHandler->ScaleCoordinates( fX, fY, foX, foY, bLimit, bCERenderer );
-        }
-    }
+	void CPluginHTML5::ScaleCoordinates(float fX, float fY, float& foX, float& foY, bool bLimit /*= false*/, bool bCERenderer /*= true */)
+	{
+		if (m_refCEFHandler.get() != nullptr)
+		{
+			m_refCEFHandler->_renderHandler->ScaleCoordinates(fX, fY, foX, foY, bLimit, bCERenderer);
+		}
+	}
 
-    void CPluginHTML5::SetInputMode( int nMode, bool bExclusive )
-    {
-        if ( m_refCEFHandler.get() != nullptr )
-        {
-            // m_refCEFHandler->m_input.SetInputMode( nMode, bExclusive );
-        }
-    }
+	void CPluginHTML5::SetInputMode(int nMode, bool bExclusive)
+	{
+		if (m_refCEFHandler.get() != nullptr)
+		{
+			// m_refCEFHandler->m_input.SetInputMode( nMode, bExclusive );
+		}
+	}
 
-    void CPluginHTML5::SetActive( bool bActive )
-    {
-        cm5_active = bActive ? 1.0f : 0.0f;
-    }
+	void CPluginHTML5::SetActive(bool bActive)
+	{
+		cm5_active = bActive ? 1.0f : 0.0f;
+	}
 
-    bool CPluginHTML5::IsCursorOnSurface()
-    {
-        if ( cm5_active > 0.0 && m_refCEFHandler.get() != nullptr )
-        {
-            float fX = 0.0f, fY = 0.0f;
-            // m_refCEFHandler->m_input.GetCursorPos( fX, fY );
+	bool CPluginHTML5::IsCursorOnSurface()
+	{
+		if (cm5_active > 0.0 && m_refCEFHandler.get() != nullptr)
+		{
+			float fX = 0.0f, fY = 0.0f;
+			// m_refCEFHandler->m_input.GetCursorPos( fX, fY );
 
-            return IsOpaque( fX, fY );
-        }
+			return IsOpaque(fX, fY);
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    bool CPluginHTML5::IsOpaque( float fX, float fY )
-    {
-		
+	bool CPluginHTML5::IsOpaque(float fX, float fY)
+	{
+
 		/*
-        if ( cm5_active > 0.0 && m_refCEFHandler.get() != nullptr )
-        {
-            const ColorB& color = m_refCEFHandler->_renderHandler->GetPixel( fX, fY );
+		if ( cm5_active > 0.0 && m_refCEFHandler.get() != nullptr )
+		{
+		const ColorB& color = m_refCEFHandler->_renderHandler->GetPixel( fX, fY );
 
-            return color.a >= ( cm5_alphatest * 255 );
-        }
+		return color.a >= ( cm5_alphatest * 255 );
+		}
 		*/
 
-        return false;
-    }
+		return false;
+	}
 
 	// This is copied from CEF offscren demo cefclient_osr_widget_win section
 	bool CPluginHTML5::isKeyDown(WPARAM wparam) {
@@ -672,7 +680,7 @@ namespace HTML5Plugin
 	}
 
 	//bool CPluginHTML5::IsOverPopupWidget(int x, int y) const {
-// 	//	const CefRect& rc = renderer_.popup_rect();
+	// 	//	const CefRect& rc = renderer_.popup_rect();
 	//	int popup_right = rc.x + rc.width;
 	//	int popup_bottom = rc.y + rc.height;
 	//	return (x >= rc.x) && (x < popup_right) &&
@@ -680,11 +688,11 @@ namespace HTML5Plugin
 	//}
 
 	//int CPluginHTML5::GetPopupXOffset() const {
-// 	//	return renderer_.original_popup_rect().x - renderer_.popup_rect().x;
+	// 	//	return renderer_.original_popup_rect().x - renderer_.popup_rect().x;
 	//}
 
 	//int CPluginHTML5::GetPopupYOffset() const {
-// 	//	return renderer_.original_popup_rect().y - renderer_.popup_rect().y;
+	// 	//	return renderer_.original_popup_rect().y - renderer_.popup_rect().y;
 	//}
 
 	//void CPluginHTML5::ApplyPopupOffset(int& x, int& y) const {
@@ -717,7 +725,7 @@ namespace HTML5Plugin
 	//	Create(parent_hwnd, rect);
 
 	//	CefWindowInfo window_info;
-// 	//	window_info.SetAsWindowless(hwnd_, renderer_.IsTransparent());
+	// 	//	window_info.SetAsWindowless(hwnd_, renderer_.IsTransparent());
 	//	// settings.background_color = 0xffffff80;
 	//	// Create the browser asynchronously.
 	//	CefBrowserHost::CreateBrowser(window_info, handler, startup_url, settings,
@@ -736,9 +744,9 @@ namespace HTML5Plugin
 		DCHECK(browser_.get());
 
 		// Create the native window.
-		const RECT rect = {x, y,
+		const RECT rect = { x, y,
 			x + static_cast<int>(width),
-			y + static_cast<int>(height)};
+			y + static_cast<int>(height) };
 		//Create(parent_hwnd, rect);
 
 		// Send resize notification so the compositor is assigned the correct
@@ -829,8 +837,8 @@ namespace HTML5Plugin
 		//	return;
 		//}
 
-		if (device_scale_factor_width_  == device_scale_factor_width
-		 && device_scale_factor_height_ == device_scale_factor_height)
+		if (device_scale_factor_width_ == device_scale_factor_width
+			&& device_scale_factor_height_ == device_scale_factor_height)
 			return;
 
 		device_scale_factor_width_ = device_scale_factor_width;
@@ -842,63 +850,63 @@ namespace HTML5Plugin
 		// device_scale_factor_ = device_scale_factor;
 	}
 
-//	void CPluginHTML5::Create(HWND parent_hwnd, const RECT& rect) {
-//		CEF_REQUIRE_UI_THREAD();
-//		DCHECK(!hwnd_ && !hdc_ && !hrc_);
-//		DCHECK(parent_hwnd);
-//		DCHECK(!::IsRectEmpty(&rect));
-//
-//		HINSTANCE hInst = ::GetModuleHandle(NULL);
-//
-// //		const cef_color_t background_color = renderer_.GetBackgroundColor();
-//		const HBRUSH background_brush = CreateSolidBrush(
-//			RGB(CefColorGetR(background_color),
-//				CefColorGetG(background_color),
-//				CefColorGetB(background_color)));
-//
-//		RegisterOsrClass(hInst, background_brush);
-//
-//		// Create the native window with a border so it's easier to visually identify
-//		// OSR windows.
-//		hwnd_ = ::CreateWindow(kWndClass, 0,
-//			WS_BORDER | WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
-//			rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
-//			parent_hwnd, 0, hInst, 0);
-//		CHECK(hwnd_);
-//
-//		client_rect_ = rect;
-//
-//		// Associate |this| with the window.
-//		SetUserDataPtr(hwnd_, this);
-//
-//#if defined(CEF_USE_ATL)
-//		// Create/register the drag&drop handler.
-//		drop_target_ = DropTargetWin::Create(this, hwnd_);
-//		HRESULT register_res = RegisterDragDrop(hwnd_, drop_target_);
-//		DCHECK_EQ(register_res, S_OK);
-//#endif
-//
-//		// Notify the window owner.
-//		NotifyNativeWindowCreated(hwnd_);
-//	}
+	//	void CPluginHTML5::Create(HWND parent_hwnd, const RECT& rect) {
+	//		CEF_REQUIRE_UI_THREAD();
+	//		DCHECK(!hwnd_ && !hdc_ && !hrc_);
+	//		DCHECK(parent_hwnd);
+	//		DCHECK(!::IsRectEmpty(&rect));
+	//
+	//		HINSTANCE hInst = ::GetModuleHandle(NULL);
+	//
+	// //		const cef_color_t background_color = renderer_.GetBackgroundColor();
+	//		const HBRUSH background_brush = CreateSolidBrush(
+	//			RGB(CefColorGetR(background_color),
+	//				CefColorGetG(background_color),
+	//				CefColorGetB(background_color)));
+	//
+	//		RegisterOsrClass(hInst, background_brush);
+	//
+	//		// Create the native window with a border so it's easier to visually identify
+	//		// OSR windows.
+	//		hwnd_ = ::CreateWindow(kWndClass, 0,
+	//			WS_BORDER | WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
+	//			rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top,
+	//			parent_hwnd, 0, hInst, 0);
+	//		CHECK(hwnd_);
+	//
+	//		client_rect_ = rect;
+	//
+	//		// Associate |this| with the window.
+	//		SetUserDataPtr(hwnd_, this);
+	//
+	//#if defined(CEF_USE_ATL)
+	//		// Create/register the drag&drop handler.
+	//		drop_target_ = DropTargetWin::Create(this, hwnd_);
+	//		HRESULT register_res = RegisterDragDrop(hwnd_, drop_target_);
+	//		DCHECK_EQ(register_res, S_OK);
+	//#endif
+	//
+	//		// Notify the window owner.
+	//		NotifyNativeWindowCreated(hwnd_);
+	//	}
 
 
-//	void CPluginHTML5::Destroy() {
-//		CEF_REQUIRE_UI_THREAD();
-//		DCHECK(hwnd_ != NULL);
-//
-//#if defined(CEF_USE_ATL)
-//		// Revoke/delete the drag&drop handler.
-//		RevokeDragDrop(hwnd_);
-//		drop_target_ = NULL;
-//#endif
-//
-//		DisableGL();
-//
-//		// Destroy the native window.
-//		::DestroyWindow(hwnd_);
-//		hwnd_ = NULL;
-//	}
+	//	void CPluginHTML5::Destroy() {
+	//		CEF_REQUIRE_UI_THREAD();
+	//		DCHECK(hwnd_ != NULL);
+	//
+	//#if defined(CEF_USE_ATL)
+	//		// Revoke/delete the drag&drop handler.
+	//		RevokeDragDrop(hwnd_);
+	//		drop_target_ = NULL;
+	//#endif
+	//
+	//		DisableGL();
+	//
+	//		// Destroy the native window.
+	//		::DestroyWindow(hwnd_);
+	//		hwnd_ = NULL;
+	//	}
 
 	//void CPluginHTML5::EnableGL() {
 	//	CEF_REQUIRE_UI_THREAD();
@@ -925,7 +933,7 @@ namespace HTML5Plugin
 	//	hrc_ = wglCreateContext(hdc_);
 
 	//	ScopedGLContext scoped_gl_context(hdc_, hrc_, false);
-// 	//	renderer_.Initialize();
+	// 	//	renderer_.Initialize();
 	//}
 
 	//void CPluginHTML5::DisableGL() {
@@ -936,7 +944,7 @@ namespace HTML5Plugin
 
 	//	{
 	//		ScopedGLContext scoped_gl_context(hdc_, hrc_, false);
-// 	//		renderer_.Cleanup();
+	// 	//		renderer_.Cleanup();
 	//	}
 
 	//	if (IsWindow(hwnd_)) {
@@ -973,7 +981,7 @@ namespace HTML5Plugin
 	//		EnableGL();
 
 	//	ScopedGLContext scoped_gl_context(hdc_, hrc_, true);
-// 	//	renderer_.Render();
+	// 	//	renderer_.Render();
 	//}
 
 	//void CPluginHTML5::NotifyNativeWindowCreated(HWND hwnd) {
@@ -1022,10 +1030,12 @@ namespace HTML5Plugin
 		// CPluginHTML5* self = GetUserDataPtr<CPluginHTML5*>(hWnd);
 		CPluginHTML5* self = HTML5Plugin::gPlugin;
 		if (!self)
-			return DefWindowProc(hWnd, message, wParam, lParam);
+			return 1;
+		//return DefWindowProc(hWnd, message, wParam, lParam);
 
 		switch (message) {
 		case WM_LBUTTONDOWN:
+			::OutputDebugString(TEXT("Left Mouse Button click received by CPluginHTML5 OsrWndProc"));
 		case WM_RBUTTONDOWN:
 		case WM_MBUTTONDOWN:
 		case WM_LBUTTONUP:
@@ -1063,24 +1073,25 @@ namespace HTML5Plugin
 			self->OnKeyEvent(message, wParam, lParam);
 			break;
 
-		//case WM_PAINT:
-		//	self->OnPaint();
-		//	return 0;
+			//case WM_PAINT:
+			//	self->OnPaint();
+			//	return 0;
 
-		//case WM_ERASEBKGND:
-		//	if (self->OnEraseBkgnd())
-		//		break;
-		//	// Don't erase the background.
-		//	return 0;
+			//case WM_ERASEBKGND:
+			//	if (self->OnEraseBkgnd())
+			//		break;
+			//	// Don't erase the background.
+			//	return 0;
 
-		//case WM_NCDESTROY:
-		//	// Clear the reference to |self|.
-		//	SetUserDataPtr(hWnd, NULL);
-		//	self->hwnd_ = NULL;
-		//	break;
+			//case WM_NCDESTROY:
+			//	// Clear the reference to |self|.
+			//	SetUserDataPtr(hWnd, NULL);
+			//	self->hwnd_ = NULL;
+			//	break;
 		}
 
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		return 1;
+		//return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 
 	void CPluginHTML5::OnMouseEvent(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -1110,7 +1121,7 @@ namespace HTML5Plugin
 			}
 		}
 
-		switch(message) {
+		switch (message) {
 		case WM_LBUTTONDOWN:
 		case WM_RBUTTONDOWN:
 		case WM_MBUTTONDOWN: {
@@ -1123,13 +1134,15 @@ namespace HTML5Plugin
 				last_mouse_pos_.x = current_mouse_pos_.x = x;
 				last_mouse_pos_.y = current_mouse_pos_.y = y;
 				mouse_rotation_ = true;
-			} else {
+			}
+			else {
 				CefBrowserHost::MouseButtonType btnType =
 					(message == WM_LBUTTONDOWN ? MBT_LEFT : (
 						message == WM_RBUTTONDOWN ? MBT_RIGHT : MBT_MIDDLE));
 				if (!cancelPreviousClick && (btnType == last_click_button_)) {
 					++last_click_count_;
-				} else {
+				}
+				else {
 					last_click_count_ = 1;
 					last_click_x_ = x;
 					last_click_y_ = y;
@@ -1159,9 +1172,10 @@ namespace HTML5Plugin
 			if (mouse_rotation_) {
 				// End rotation effect.
 				mouse_rotation_ = false;
-// 				//renderer_.SetSpin(0, 0);
+				// 				//renderer_.SetSpin(0, 0);
 				//Invalidate();
-			} else {
+			}
+			else {
 				int x = GET_X_LPARAM(lParam);
 				int y = GET_Y_LPARAM(lParam);
 				CefBrowserHost::MouseButtonType btnType =
@@ -1192,13 +1206,14 @@ namespace HTML5Plugin
 				// Apply rotation effect.
 				current_mouse_pos_.x = x;
 				current_mouse_pos_.y = y;
-// 				renderer_.IncrementSpin(
-					//current_mouse_pos_.x - last_mouse_pos_.x,
-					//current_mouse_pos_.y - last_mouse_pos_.y);
+				// 				renderer_.IncrementSpin(
+				//current_mouse_pos_.x - last_mouse_pos_.x,
+				//current_mouse_pos_.y - last_mouse_pos_.y);
 				last_mouse_pos_.x = current_mouse_pos_.x;
 				last_mouse_pos_.y = current_mouse_pos_.y;
 				//Invalidate();
-			} else {
+			}
+			else {
 				if (!mouse_tracking_) {
 					// Start tracking mouse leave. Required for the WM_MOUSELEAVE event to
 					// be generated.
@@ -1251,7 +1266,7 @@ namespace HTML5Plugin
 
 		case WM_MOUSEWHEEL:
 			if (browser_host) {
-				POINT screen_point = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+				POINT screen_point = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 				HWND scrolled_wnd = ::WindowFromPoint(screen_point);
 				if (scrolled_wnd != hwnd_)
 					break;
@@ -1274,7 +1289,7 @@ namespace HTML5Plugin
 	}
 
 
-	void CPluginHTML5::OnSizing(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){
+	void CPluginHTML5::OnSizing(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		LPRECT rect = (RECT *)(lParam);
 		LONG width;
 		LONG widthIdeal;
@@ -1283,14 +1298,10 @@ namespace HTML5Plugin
 		hwnd_ = hwnd;
 		width = rect->right - rect->left;
 		height = rect->bottom - rect->top;
-		ratio = 1280.0f / 720.0f;
-		widthIdeal = height * ratio;
-		// rect->right = rect->left + widthIdeal;
- 		// SetDeviceScaleFactor(widthIdeal / 1280.0f);
 		::GetClientRect(hwnd_, &client_rect_);
 		SetDeviceScaleFactor(
-			(client_rect_.right - client_rect_.left) / 1280.0f,
-			(client_rect_.bottom - client_rect_.top) / 720.0f
+			(client_rect_.right - client_rect_.left) / TEARLESS_WINDOW_WIDTH,
+			(client_rect_.bottom - client_rect_.top) / TEARLESS_WINDOW_HEIGHT
 		);
 	}
 
@@ -1336,7 +1347,7 @@ namespace HTML5Plugin
 		CefKeyEvent event;
 		event.windows_key_code = wParam;
 		event.native_key_code = lParam;
-		event.is_system_key = 
+		event.is_system_key =
 			message == WM_SYSCHAR ||
 			message == WM_SYSKEYDOWN ||
 			message == WM_SYSKEYUP;
@@ -1368,33 +1379,34 @@ namespace HTML5Plugin
 		return (browser_ == NULL);
 	}
 
-//	bool CPluginHTML5::IsOverPopupWidget(int x, int y) const {
-//		CEF_REQUIRE_UI_THREAD();
-//// 		const CefRect& rc = renderer_.popup_rect();
-//		int popup_right = rc.x + rc.width;
-//		int popup_bottom = rc.y + rc.height;
-//		return (x >= rc.x) && (x < popup_right) &&
-//			(y >= rc.y) && (y < popup_bottom);
-//	}
-//
-//	int CPluginHTML5::GetPopupXOffset() const {
-//		CEF_REQUIRE_UI_THREAD();
-//// 		return renderer_.original_popup_rect().x - renderer_.popup_rect().x;
-//	}
-//
-//	int CPluginHTML5::GetPopupYOffset() const {
-//		CEF_REQUIRE_UI_THREAD();
-//// 		return renderer_.original_popup_rect().y - renderer_.popup_rect().y;
-//	}
-//
-//	void CPluginHTML5::ApplyPopupOffset(int& x, int& y) const {
-//		if (IsOverPopupWidget(x, y)) {
-//			x += GetPopupXOffset();
-//			y += GetPopupYOffset();
-//		}
-//	}
+	//	bool CPluginHTML5::IsOverPopupWidget(int x, int y) const {
+	//		CEF_REQUIRE_UI_THREAD();
+	//// 		const CefRect& rc = renderer_.popup_rect();
+	//		int popup_right = rc.x + rc.width;
+	//		int popup_bottom = rc.y + rc.height;
+	//		return (x >= rc.x) && (x < popup_right) &&
+	//			(y >= rc.y) && (y < popup_bottom);
+	//	}
+	//
+	//	int CPluginHTML5::GetPopupXOffset() const {
+	//		CEF_REQUIRE_UI_THREAD();
+	//// 		return renderer_.original_popup_rect().x - renderer_.popup_rect().x;
+	//	}
+	//
+	//	int CPluginHTML5::GetPopupYOffset() const {
+	//		CEF_REQUIRE_UI_THREAD();
+	//// 		return renderer_.original_popup_rect().y - renderer_.popup_rect().y;
+	//	}
+	//
+	//	void CPluginHTML5::ApplyPopupOffset(int& x, int& y) const {
+	//		if (IsOverPopupWidget(x, y)) {
+	//			x += GetPopupXOffset();
+	//			y += GetPopupYOffset();
+	//		}
+	//	}
 
 	void CPluginHTML5::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+		DEBUG_OUT("CPluginHTML5::OnAfterCreated");
 		CEF_REQUIRE_UI_THREAD();
 		DCHECK(!browser_);
 		browser_ = browser;
@@ -1404,7 +1416,103 @@ namespace HTML5Plugin
 			// time to create associated internal objects.
 			CefPostTask(TID_UI, base::Bind(&CPluginHTML5::Show, this));
 		}
+#ifdef TEARLESS_MESSAGE_ROUTER
+		AnotherMessageRouter();
+		 CreateMessageRouter();
+#endif
 	}
+
+#ifdef TEARLESS_MESSAGE_ROUTER
+#if 1
+	void CPluginHTML5::AnotherMessageRouter() {
+
+		browser_count_++;
+
+		if (!message_router_) {
+			// Create the browser-side router for query handling.
+			CefMessageRouterConfig config;
+			message_router_ = CefMessageRouterBrowserSide::Create(config);
+
+			// Register handlers with the router.
+			client::binding_test::CreateMessageHandlers(message_handler_set_);
+			MessageHandlerSet::const_iterator it = message_handler_set_.begin();
+			for (; it != message_handler_set_.end(); ++it) {
+				DEBUG_OUT("AddHandler returned: %i", message_router_->AddHandler(*(it), false));
+			}
+		}
+
+		// Maybe we need this
+		// NotifyBrowserCreated(browser);
+	}
+#endif
+	void CPluginHTML5::CreateMessageRouter() {
+
+		// EXAMPLE USAGE
+		//
+		// 1. Define the router configuration. You can optionally specify settings
+		//    like the JavaScript function names. The configuration must be the same in
+		//    both the browser and renderer processes. If using multiple routers in the
+		//    same application make sure to specify unique function names for each
+		//    router configuration.
+		//
+		//    // Example config object showing the default values.
+		CefMessageRouterConfig config;
+		//config.js_query_function = "cefQuery";
+		//config.js_cancel_function = "cefQueryCancel";
+		//
+		// 2. Create an instance of CefMessageRouterBrowserSide in the browser process.
+		//    You might choose to make it a member of your CefClient implementation,
+		//    for example.
+		//
+		CefRefPtr<CefMessageRouterBrowserSide> browser_side_router_ = CefMessageRouterBrowserSide::Create(config);
+		//
+		// 3. Register one or more Handlers. The Handler instances must either outlive
+		//    the router or be removed from the router before they're deleted.
+		//
+		CefMessageRouterBrowserSide::Handler* handler_ = client::binding_test::newHandler();
+		//client::binding_test::CreateMessageHandlers(handlers);
+		browser_side_router_->AddHandler(handler_, 1);
+		//
+		// 4. Call all required CefMessageRouterBrowserSideImpl methods from other callbacks
+		//    in your CefClient implementation (OnBeforeClose, etc). See the
+		//    CefMessageRouterBrowserSideImpl class documentation for the complete list of
+		//    methods.
+		//
+		// 5. Create an instance of CefMessageRouterRendererSide in the renderer process.
+		//    You might choose to make it a member of your CefApp implementation, for
+		//    example.
+		//
+		//CefMessageRouterConfig config;
+		
+
+		//
+		// 6. Call all required CefMessageRouterRendererSide methods from other
+		//    callbacks in your CefRenderProcessHandler implementation
+		//    (OnContextCreated, etc). See the CefMessageRouterRendererSide class
+		//    documentation for the complete list of methods.
+		//
+		// 7. Execute the query function from JavaScript code.
+		//
+		/*
+window.cefQuery({request: 'BindingTest',
+				 persistent: false,
+				 onSuccess: function(response) { console.log("success", response); },
+				 onFailure: function(error_code, error_message) { console.log("failure"); } }
+
+var request_id = window.cefQuery({
+    request: 'my_request',
+    persistent: false,
+    onSuccess: function(response) { console.log("OK"); },
+    onFailure: function(error_code, error_message) { console.log("Error"); }
+});
+	    */
+		// 8. Handle the query in your Handler::OnQuery implementation and execute the
+		//    appropriate callback either immediately or asynchronously.
+		//
+		//
+		// 9. Notice that the onSuccess callback is executed in JavaScript.
+	}
+#endif
 
 	//void CPluginHTML5::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 	//	CEF_REQUIRE_UI_THREAD();
@@ -1473,23 +1581,23 @@ namespace HTML5Plugin
 		return true;
 	}
 
-//	void CPluginHTML5::OnPopupShow(CefRefPtr<CefBrowser> browser,
-//		bool show) {
-//		CEF_REQUIRE_UI_THREAD();
-//
-//		if (!show) {
-//// 			renderer_.ClearPopupRects();
-//			browser->GetHost()->Invalidate(PET_VIEW);
-//		}
-//// 		renderer_.OnPopupShow(browser, show);
-//	}
+	//	void CPluginHTML5::OnPopupShow(CefRefPtr<CefBrowser> browser,
+	//		bool show) {
+	//		CEF_REQUIRE_UI_THREAD();
+	//
+	//		if (!show) {
+	//// 			renderer_.ClearPopupRects();
+	//			browser->GetHost()->Invalidate(PET_VIEW);
+	//		}
+	//// 		renderer_.OnPopupShow(browser, show);
+	//	}
 
-//	void CPluginHTML5::OnPopupSize(CefRefPtr<CefBrowser> browser,
-//		const CefRect& rect) {
-//		CEF_REQUIRE_UI_THREAD();
-//
-//// 		renderer_.OnPopupSize(browser, client::LogicalToDevice(rect, device_scale_factor_));
-//	}
+	//	void CPluginHTML5::OnPopupSize(CefRefPtr<CefBrowser> browser,
+	//		const CefRect& rect) {
+	//		CEF_REQUIRE_UI_THREAD();
+	//
+	//// 		renderer_.OnPopupSize(browser, client::LogicalToDevice(rect, device_scale_factor_));
+	//	}
 
 	//void CPluginHTML5::OnPaint(CefRefPtr<CefBrowser> browser,
 	//	CefRenderHandler::PaintElementType type,
@@ -1500,20 +1608,20 @@ namespace HTML5Plugin
 	//	CEF_REQUIRE_UI_THREAD();
 
 	//	if (painting_popup_) {
-// 	//		renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
+	// 	//		renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
 	//		return;
 	//	}
 	//	if (!hdc_)
 	//		EnableGL();
 
 	//	ScopedGLContext scoped_gl_context(hdc_, hrc_, true);
-// 	//	renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
-// 	//	if (type == PET_VIEW && !renderer_.popup_rect().IsEmpty()) {
+	// 	//	renderer_.OnPaint(browser, type, dirtyRects, buffer, width, height);
+	// 	//	if (type == PET_VIEW && !renderer_.popup_rect().IsEmpty()) {
 	//		painting_popup_ = true;
 	//		browser->GetHost()->Invalidate(PET_POPUP);
 	//		painting_popup_ = false;
 	//	}
-// 	//	renderer_.Render();
+	// 	//	renderer_.Render();
 	//}
 
 	void CPluginHTML5::OnCursorChange(
