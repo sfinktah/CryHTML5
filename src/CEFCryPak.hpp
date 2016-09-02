@@ -6,6 +6,39 @@
 
 #include <cef_scheme.h>
 #include <include/wrapper/cef_stream_resource_handler.h>
+
+uint32_t reference_jenkins_one_at_a_time_hash(char *key, size_t len)
+{
+	uint32_t hash, i;
+	for(hash = i = 0; i < len; ++i)
+	{
+		hash += key[i];
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+	}
+	hash += (hash << 3);
+	hash ^= (hash >> 11);
+	hash += (hash << 15);
+	return hash;
+}
+
+constexpr unsigned int SHL(unsigned int hash, unsigned int n) {
+	return (hash + (hash << n));
+}
+constexpr unsigned int SHR(unsigned int hash, unsigned int n) {
+	return (hash + (hash >> n));
+}
+constexpr unsigned int XHR(unsigned int hash, unsigned int n) {
+	return (hash ^ (hash >> n));
+}
+
+constexpr unsigned int JOAAT(const char* text, unsigned int hash = 0) {
+	return *(text + 1) 
+		? JOAAT((const char *)(text + 1), XHR(SHL((hash + *text), 10), 6))
+		: SHL(XHR(SHL((XHR(SHL((hash + *text), 10), 6)), 3), 11), 15)
+		;
+}
+
 /** @brief Implementation of the resource handler for client requests. */
 class CEFCryPakResourceHandler : public CefResourceHandler
 {
@@ -32,6 +65,7 @@ class CEFCryPakResourceHandler : public CefResourceHandler
         */
         virtual bool ProcessRequest( CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback ) OVERRIDE
         {
+
             // Evaluate request to determine proper handling
             bool handled = false;
 
@@ -44,29 +78,51 @@ class CEFCryPakResourceHandler : public CefResourceHandler
 
             // Get extension
             nOffset = m_sPath.find_last_of( '.' ) + 1;
-            m_sExtension = m_sPath.Mid( nOffset, 3 ).Trim().MakeLower();
+            m_sExtension = m_sPath.Mid( nOffset, 4 ).Trim().MakeLower();
 
             // Get Mime (TODO: Later use CefGetMimeType -> requires update) // https://code.google.com/p/chromiumembedded/source/detail?r=1577
-            m_sMime = "text/html"; // default
-
-            if ( m_sExtension == "png" )
-            {
-                m_sMime = "image/png";
-            }
-
-            else if ( m_sExtension == "jpg" || m_sExtension == "jpe" )
-            {
-                m_sMime = "image/jpeg";
-            }
-
-            else if ( m_sExtension == "bmp" )
-            {
-                m_sMime = "image/bmp";
-            }
-
-            else if ( m_sExtension == "js" )
-            {
-                m_sMime = "application/javascript";
+            switch (JOAAT(m_sExtension.c_str())) {
+                case JOAAT("eot"):  m_sMime = "application/vnd.ms-fontobject";     break;
+                case JOAAT("jpg"):  m_sMime = "image/jpeg";                        break;
+                case JOAAT("png"):  m_sMime = "image/png";                         break;
+                case JOAAT("js"):   m_sMime = "application/javascript";            break;
+                case JOAAT("tiff"): m_sMime = "image/tiff";                        break;
+                case JOAAT("bmp"):  m_sMime = "image/bmp";                         break;
+                case JOAAT("gif"):  m_sMime = "image/gif";                         break;
+                case JOAAT("cab"):  m_sMime = "application/vnd.ms-cab-compressed"; break;
+                case JOAAT("css"):  m_sMime = "text/css";                          break;
+                case JOAAT("xml"):  m_sMime = "application/xml";                   break;
+                case JOAAT("exe"):  m_sMime = "application/x-msdownload";          break;
+                case JOAAT("ico"):  m_sMime = "image/x-icon";                      break;
+                case JOAAT("psf"):  m_sMime = "application/x-font-linux-psf";      break;
+                case JOAAT("html"): m_sMime = "text/html";                         break;
+                case JOAAT("msi"):  m_sMime = "application/x-msdownload";          break;
+                case JOAAT("svg"):  m_sMime = "image/svg+xml";                     break;
+                case JOAAT("mar"):  m_sMime = "application/octet-stream";          break;
+                case JOAAT("txt"):  m_sMime = "text/plain";                        break;
+                case JOAAT("json"): m_sMime = "application/json";                  break;
+                case JOAAT("woff"): m_sMime = "application/x-font-woff";           break;
+                case JOAAT("jpeg"): m_sMime = "image/jpeg";                        break;
+                case JOAAT("zip"):  m_sMime = "application/zip";                   break;
+                case JOAAT("htm"):  m_sMime = "text/html";                         break;
+                case JOAAT("bz2"):  m_sMime = "application/x-bzip2";               break;
+                case JOAAT("ttf"):  m_sMime = "application/x-font-ttf";            break;
+                case JOAAT("crt"):  m_sMime = "application/x-x509-ca-cert";        break;
+                case JOAAT("mp4"):  m_sMime = "video/mp4";                         break;
+                case JOAAT("svc"):  m_sMime = "application/vnd.dvb.service";       break;
+                case JOAAT("pl"):   m_sMime = "text/plain";                        break;
+                case JOAAT("swf"):  m_sMime = "application/x-shockwave-flash";     break;
+                case JOAAT("pdf"):  m_sMime = "application/pdf";                   break;
+                case JOAAT("cer"):  m_sMime = "application/pkix-cert";             break;
+                case JOAAT("deb"):  m_sMime = "application/x-debian-package";      break;
+                case JOAAT("atom"): m_sMime = "application/atom+xml";              break;
+                case JOAAT("aac"):  m_sMime = "audio/x-aac";                       break;
+                case JOAAT("m3u8"): m_sMime = "application/vnd.apple.mpegurl";     break;
+                case JOAAT("com"):  m_sMime = "application/x-msdownload";          break;
+                case JOAAT("mp3"):  m_sMime = "audio/mpeg";                        break;
+                case JOAAT("crl"):  m_sMime = "application/pkix-crl";              break;
+                case JOAAT("otf"):  m_sMime = "application/x-font-otf";            break;
+				default:             m_sMime = "application/octet-stream";
             }
 
             // Open File
@@ -74,7 +130,7 @@ class CEFCryPakResourceHandler : public CefResourceHandler
             // if ( ( m_fHandle = gEnv->pCryPak->FOpen( m_sPath, "rb" ) ) == NULL )
             if ( ( m_fHandle = ::fopen(m_sPath, "rb" ) ) == NULL )
             {
-                HTML5Plugin::gPlugin->LogWarning( "ProcessReques(%s) Unable to find specified path in pak", m_sPath.c_str() );
+                HTML5Plugin::gPlugin->LogWarning( "ProcessRequest(%s) Unable to find specified path in pak", m_sPath.c_str() );
             }
 
             else {
@@ -85,7 +141,7 @@ class CEFCryPakResourceHandler : public CefResourceHandler
 				rewind(m_fHandle);
                 // m_nSize = gEnv->pCryPak->FGetSize( m_fHandle );
 
-                HTML5Plugin::gPlugin->LogAlways( "ProcessReques(%s) Success Ext(%s) Mime(%s) Size(%ld)", m_sPath.c_str(), m_sExtension.c_str(), m_sMime.c_str(), m_nSize );
+                HTML5Plugin::gPlugin->LogAlways( "ProcessRequest(%s) Success Ext(%s) Mime(%s) Size(%ld)", m_sPath.c_str(), m_sExtension.c_str(), m_sMime.c_str(), m_nSize );
 
                 // Indicate the headers are available.
                 callback->Continue();

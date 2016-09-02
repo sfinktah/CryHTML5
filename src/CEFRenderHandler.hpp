@@ -11,8 +11,9 @@
 #include <FullscreenTriangleDrawer.h>
 #include "../StaticTest.h"
 // #include "Cry_Color.h"
-#include "Cry_Math.h"
+//#include "Cry_Math.h"
 #include <d3d11.h>
+#include <Sfinktah/debug.h>
 
 //#include "../GameSDK/GameDll/MyFiles/Camera/MeasureTime.hpp"
 
@@ -23,10 +24,13 @@
 
 /** @brief CryENGINE & Direct3D renderer handler */
 class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEventListener
+
+
 {
     public:
         int _windowHeight; //!< the frame height in pixels
         int _windowWidth; //!< the frame width in pixels
+		//CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
 
     private:
         const void* _buffer; //!< the CEF frame buffer (not synchronized to reduce overhead)
@@ -209,8 +213,8 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 			*/
 			
 			// sfink: not sure where windowheight and windowwidth are set, but changing them h ere
-			_windowWidth = 1280;
-			_windowHeight = 720;
+			_windowWidth = TEARLESS_WINDOW_WIDTH;
+			_windowHeight = TEARLESS_WINDOW_HEIGHT;
 
 			
 			// This snippet is from https://chromium.googlesource.com/external/angleproject/dx11proto/+/fc84fd6f076d504af33a78a906985ea2a2268346/src/libGLESv2/renderer/RenderTarget11.cpp
@@ -346,7 +350,10 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
                 {
                     HTML5Plugin::gPlugin->LogAlways( "Fail CreateShaderResourceView" );
                 }
-            }
+			}
+
+			//CefMessageRouterConfig config;
+			//m_MessageRouterRenderSide = CefMessageRouterRendererSide::Create(config);
         }
 
     public:
@@ -398,6 +405,12 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
             //// HTML5Plugin::gPlugin->LogAlways( "OnPaint: %s, type(%d), %d, %dm %0x016p", SAFESTR( url.c_str() ), int( type ), width, height, buffer );
 
+			DEBUG_OUT("CEFRenderHandler::OnPaint");
+			DEBUG_PTR(browser);
+			DEBUG_PTR(browser->GetMainFrame());
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
+
+
             for ( auto iter = dirtyRects.begin(); iter != dirtyRects.end(); ++iter )
             {
                 dirtyarea( iter->x, iter->y, iter->width, iter->height );
@@ -409,6 +422,10 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
         virtual void OnCursorChange( CefRefPtr<CefBrowser> browser, CefCursorHandle cursor )
         {
+			DEBUG_OUT("CEFRenderHandler::OnCursorChange");
+			DEBUG_PTR(browser);
+			DEBUG_PTR(browser->GetMainFrame());
+			DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
         }
 
         virtual void OnScrollOffsetChanged( CefRefPtr<CefBrowser> browser )
