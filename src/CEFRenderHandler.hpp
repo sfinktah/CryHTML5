@@ -11,7 +11,7 @@
 #include <FullscreenTriangleDrawer.h>
 #include "../StaticTest.h"
 // #include "Cry_Color.h"
-#include "Cry_Math.h"
+//#include "Cry_Math.h"
 #include <d3d11.h>
 #include <Sfinktah/debug.h>
 
@@ -30,7 +30,7 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
     public:
         int _windowHeight; //!< the frame height in pixels
         int _windowWidth; //!< the frame width in pixels
-		CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
+		//CefRefPtr<CefMessageRouterRendererSide> m_MessageRouterRenderSide = NULL;
 
     private:
         const void* _buffer; //!< the CEF frame buffer (not synchronized to reduce overhead)
@@ -352,8 +352,8 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
                 }
 			}
 
-			CefMessageRouterConfig config;
-			m_MessageRouterRenderSide = CefMessageRouterRendererSide::Create(config);
+			//CefMessageRouterConfig config;
+			//m_MessageRouterRenderSide = CefMessageRouterRendererSide::Create(config);
         }
 
     public:

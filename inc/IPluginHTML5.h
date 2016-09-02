@@ -41,7 +41,7 @@ namespace HTML5Plugin
 		* @param vOffset offset in world space
 		* @return true if successful
 		*/
-		virtual bool WorldPosToScreenPos( CCamera cam, Vec3 vWorld, Vec3& vScreen, Vec3 vOffset = Vec3( ZERO ) ) = 0;
+		//virtual bool WorldPosToScreenPos( CCamera cam, Vec3 vWorld, Vec3& vScreen, Vec3 vOffset = Vec3( ZERO ) ) = 0;
 
 		/**
 		* @brief scale the coordinates in screen space
