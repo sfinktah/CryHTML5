@@ -130,6 +130,9 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             {
                 HTML5Plugin::gPlugin->m_refCEFFrame = browser->GetMainFrame(); // remember frame
                 HTML5Plugin::gPlugin->m_refCEFBrowser  = browser; // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
+                DEBUG_PTR(browser);
+                DEBUG_PTR(browser->GetMainFrame());
+                DEBUG_PTR(browser->GetMainFrame()->GetV8Context())
                 // and why not call this event while we're fucking at it too
                 HTML5Plugin::gPlugin->OnAfterCreated(browser); // Surely we must need more CefRefPtr's
 
