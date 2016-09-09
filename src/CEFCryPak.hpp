@@ -6,6 +6,8 @@
 
 #include <cef_scheme.h>
 #include <include/wrapper/cef_stream_resource_handler.h>
+#include <Sfinktah/debug.h>
+#include <CEFQueryUrl.h>
 
 uint32_t reference_jenkins_one_at_a_time_hash(char *key, size_t len)
 {
@@ -39,6 +41,106 @@ constexpr unsigned int JOAAT(const char* text, unsigned int hash = 0) {
 		;
 }
 
+// from http://stackoverflow.com/questions/2616011/easy-way-to-parse-a-url-in-c-cross-platform
+#ifndef URL_HH_
+#define URL_HH_    
+#include <string>
+struct url {
+	url(const std::string& url_s); // omitted copy, ==, accessors, ...
+	std::string query() { return protocol_; }
+private:
+	void parse(const std::string& url_s);
+private:
+	std::string protocol_, host_, path_, query_;
+};
+#endif /* URL_HH_ */
+
+// #include "url.hh"
+#include <string>
+#include <iterator>
+#include <algorithm>
+#include <cctype>
+#include <functional>
+
+void url::parse(const std::string& url_s)
+{
+	/* Protocol */
+	const std::string prot_end("://");
+
+	std::string::const_iterator prot_i = search(url_s.begin(), url_s.end(), prot_end.begin(), prot_end.end());
+
+	protocol_.reserve(distance(url_s.begin(), prot_i));
+
+	transform(url_s.begin(), prot_i,
+		back_inserter(protocol_),
+		std::ptr_fun<int,int>(tolower)); // protocol is icase
+
+	if( prot_i == url_s.end() )
+		return;
+
+	advance(prot_i, prot_end.length());
+
+
+	/* Path */
+	std::string::const_iterator path_i = find(prot_i, url_s.end(), '/');
+
+	host_.reserve(distance(prot_i, path_i));
+	transform(prot_i, path_i,
+		back_inserter(host_),
+		std::ptr_fun<int,int>(tolower)); // host is icase
+
+	/* Path & Query */
+	std::string::const_iterator query_i = find(path_i, url_s.end(), '?');
+	path_.assign(path_i, query_i);
+	if( query_i != url_s.end() )
+		++query_i;
+	query_.assign(query_i, url_s.end());
+}
+// From http://www.gnu.org/software/cgicc
+char hexToChar(char first,
+	char second)
+{
+	int digit;
+
+	digit = (first >= 'A' ? ((first & 0xDF) - 'A') + 10 : (first - '0'));
+	digit *= 16;
+	digit += (second >= 'A' ? ((second & 0xDF) - 'A') + 10 : (second - '0'));
+	return static_cast<char>(digit);
+}
+
+std::string form_urldecode(const std::string& src)
+{
+	std::string result;
+	std::string::const_iterator iter;
+	char c;
+
+	for(iter = src.begin(); iter != src.end(); ++iter) {
+		switch(*iter) {
+		case '+':
+			result.append(1, ' ');
+			break;
+		case '%':
+			// Don't assume well-formed input
+			if(std::distance(iter, src.end()) >= 2
+				&& std::isxdigit(*(iter + 1)) && std::isxdigit(*(iter + 2))) {
+				c = *++iter;
+				result.append(1, hexToChar(c, *++iter));
+			}
+			// Just pass the % through untouched
+			else {
+				result.append(1, '%');
+			}
+			break;
+
+		default:
+			result.append(1, *iter);
+			break;
+		}
+	}
+
+	return result;
+}
+
 /** @brief Implementation of the resource handler for client requests. */
 class CEFCryPakResourceHandler : public CefResourceHandler
 {
@@ -46,6 +148,7 @@ class CEFCryPakResourceHandler : public CefResourceHandler
         FILE* m_fHandle; //!< file handle inside CryPak
 		string m_sPath; //!< file path
         string m_sExtension; //!< file extension
+		string m_sQuery; //<- optional query CefString
         string m_sMime; //!< mime type
         size_t m_nSize; //!< file size
         size_t m_nOffset; //!< current position inside of file
@@ -63,22 +166,32 @@ class CEFCryPakResourceHandler : public CefResourceHandler
         * @param request request
         * @param callback callback
         */
-        virtual bool ProcessRequest( CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback ) OVERRIDE
-        {
+		virtual bool ProcessRequest(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback) OVERRIDE
+		{
 
-            // Evaluate request to determine proper handling
-            bool handled = false;
+			// Evaluate request to determine proper handling
+			bool handled = false;
 
-            // CryPak uses UTF-8
-            string sPath = PluginManager::UCS22UTF8( request->GetURL().ToWString().c_str() );
+			// CryPak uses UTF-8
+			string sPath = PluginManager::UCS22UTF8(request->GetURL().ToWString().c_str());
 
-            // Get path
-            size_t nOffset = sPath.find_first_of( '/' ) + 2;
-            m_sPath = sPath.Mid( nOffset ).Trim();
+			// Get path
+			size_t nOffset = sPath.find_first_of('/') + 2;
+			m_sPath = sPath.Mid(nOffset).Trim();
 
-            // Get extension
-            nOffset = m_sPath.find_last_of( '.' ) + 1;
-            m_sExtension = m_sPath.Mid( nOffset, 4 ).Trim().MakeLower();
+			// Get extension
+			nOffset = m_sPath.find_last_of('.') + 1;
+			m_sExtension = m_sPath.Mid(nOffset, 4).Trim().MakeLower();
+
+			// Get query
+			nOffset = sPath.find_first_of('?') + 1;
+			if (nOffset > 0) {
+				m_sQuery = sPath.Mid(nOffset).Trim();
+				const string query = m_sQuery;
+				std::string decodedQuery = form_urldecode(query.c_str());
+				DEBUG_OUT_A("Decoded Query: %s", decodedQuery.c_str());
+				HTML5Plugin::CEFQueryUrl::ProcessQuery(request, callback, m_sPath.c_str(), m_sExtension.c_str(), decodedQuery.c_str());
+			}
 
             // Get Mime (TODO: Later use CefGetMimeType -> requires update) // https://code.google.com/p/chromiumembedded/source/detail?r=1577
             switch (JOAAT(m_sExtension.c_str())) {
@@ -239,6 +352,10 @@ class CEFCryPakHandlerFactory : public CefSchemeHandlerFactory
     public:
         virtual CefRefPtr<CefResourceHandler> Create( CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name, CefRefPtr<CefRequest> request ) OVERRIDE
         {
+			//DEBUG_OUT("CEFCryPackhandlerFactory::Create");
+			//DEBUG_PTR(browser);
+			//DEBUG_PTR(browser->GetMainFrame());
+			//DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
             // Return a new resource handler instance to handle the request.
             return new CEFCryPakResourceHandler();
 

@@ -1,7 +1,6 @@
 #include <StdAfx.h>
 #include <windowsx.h>
-#include "OsrWndProc.h"
-#include <AuthorityProjectConfig.h>
+#include "../../../../../AuthorityProjectConfig.h"
 #include <Tearless/CEF/include/wrapper/cef_helpers.h>
 #include <Tearless/CEF/cefclient/browser/geometry_util.h>
 #include <CPluginHTML5.h>
@@ -14,6 +13,7 @@
 
 
 namespace HTML5Plugin {
+	/// Tearless WndProc, returns 1 if processing should continue, 0 if event process should stop.
 	LRESULT CALLBACK CWndProc::OsrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 		//CEF_REQUIRE_UI_THREAD();
 		//gPlugin->LogError("CWndProc::OsrWndProc: CefCurrentlyOn() = %i", CefCurrentlyOn(TID_UI));

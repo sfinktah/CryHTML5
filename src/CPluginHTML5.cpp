@@ -1,5 +1,5 @@
 /* CryHTML5 - for licensing and copyright see license.txt */
-#include <AuthorityProjectConfig.h>
+#include "../../../../../AuthorityProjectConfig.h"
 
 #include <StdAfx.h>
 #include <CPluginHTML5.h>
@@ -10,6 +10,8 @@
 #include <OsrWndProc.h>
 
 #include <PMUtils.hpp>
+#include "TwSimpleDX11.h"
+#include "../../../../../Sfinktah/debug.h"
 
 #ifdef ENABLE_TEARLESS
 #pragma comment(lib, "libcef")
@@ -306,9 +308,10 @@ namespace HTML5Plugin
         {
             /* These three re-added from henry's source, should um CHECK THEM again */
 			/* So turns out we don't have these globally defined. */
-            //gD3DSystem->SetDevice(g_D3DDev);
-            //gD3DSystem->SetDeviceContext(g_D3DDevCtx);
-            //gD3DSystem->SetSwapChain(g_SwapChain);
+			/* (confusion) they're in TwSimpleDX11, added header, and we'll see what happens */
+            gD3DSystem->SetDevice(g_D3DDev);
+            gD3DSystem->SetDeviceContext(g_D3DDevCtx);
+            gD3DSystem->SetSwapChain(g_SwapChain);
             /* end added 3 */
 
             gD3DSystem->GetDevice(); // start search if isn't already found

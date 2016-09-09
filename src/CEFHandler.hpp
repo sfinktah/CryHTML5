@@ -9,7 +9,7 @@
 
 #include <CPluginHTML5.h>
 #include <CEFRenderHandler.hpp>
-#include <sfinktah/debug.h>
+#include "../../../../../Sfinktah/debug.h"
 
 // #include <CEFInputHandler.hpp>
 
@@ -137,7 +137,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
             string text = message_text.ToString().c_str();
             HTML5Plugin::gPlugin->LogAlways( "JSDialog: %s", text.c_str() );
 
-            // suppress javascript messages
+            // suppress javascript messages 
             suppress_message = true;
             return false;
         }
@@ -158,7 +158,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 			}
 
 			DEBUG_OUT("m_MessageRouterRenderSide->OnContextCreated");
-			//m_MessageRouterRenderSide->OnContextCreated(
+			//m_MessageRouterRenderSide->OnContextCrea ted(
 			//	browser,
 			//	browser->GetMainFrame(),
 			//	browser->GetMainFrame()->GetV8Context());
@@ -174,7 +174,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
                 HTML5Plugin::gPlugin->m_refCEFBrowser  = browser; // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
                 DEBUG_PTR(browser);
                 DEBUG_PTR(browser->GetMainFrame());
-                DEBUG_PTR(browser->GetMainFrame()->GetV8Context())
+				DEBUG_PTR(browser->GetMainFrame()->GetV8Context());
                 // and why not call this event while we're fucking at it too
                 //HTML5Plugin::gPlugin->OnAfterCreated(browser); // Surely we must need more CefRefPtr's
 
@@ -194,7 +194,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 [Authority] &browser->GetMainFrame(): 0000028E0660FE70
 [Authority] &browser->GetMainFrame()->GetV8Context(): 0000000000000000
 [Authority] m_MessageRouterRenderSide->OnContextCreated
-	*/
+	*/ 
 
 				DEBUG_PTR(_renderHandler);
 				//DEBUG_PTR(_renderHandler->m_MessageRouterRenderSide);
@@ -212,7 +212,7 @@ class CEFCryHandler : public CefClient, public CefLifeSpanHandler, public CefCon
 
                 HTML5Plugin::gPlugin->ShowDevTools();
             }
-        };
+        }; 
 
 		virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser)
 		{
