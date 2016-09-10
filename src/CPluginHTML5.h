@@ -1,6 +1,6 @@
 /* CryHTML5 - for licensing and copyright see license.txt */
 
-#define __OVERRIDE override
+//# define  override override
 #pragma once
 
 #include <IPluginBase.h>
@@ -50,57 +50,57 @@ namespace HTML5Plugin
             CefRefPtr<CefBrowser> m_refCEFBrowser; // sfink: why the fuck couldn't we just have this to begin with
 
             // IPluginBase
-            bool Release(bool bForce = false)__OVERRIDE;
+            bool Release(bool bForce = false) override;
 
-            int GetInitializationMode() const __OVERRIDE
+            int GetInitializationMode() const  override
             {
                 return int(PluginManager::IM_Default);
             };
 
-            bool Init(SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory)__OVERRIDE;
+            bool Init(SSystemGlobalEnvironment& env, SSystemInitParams& startupParams, IPluginBase* pPluginManager, const char* sPluginDirectory) override;
 
-            bool RegisterTypes(int nFactoryType, bool bUnregister)__OVERRIDE;
+            bool RegisterTypes(int nFactoryType, bool bUnregister) override;
 
-            const char* GetVersion() const __OVERRIDE
+            const char* GetVersion() const  override
             {
                 return "0.5.0.0";
             };
 
-            const char* GetName() const __OVERRIDE
+            const char* GetName() const  override
             {
                 return PLUGIN_NAME;
             };
 
-            const char* GetCategory() const __OVERRIDE
+            const char* GetCategory() const  override
             {
                 return "Visual";
             };
 
-            const char* ListAuthors() const __OVERRIDE
+            const char* ListAuthors() const  override
             {
                 return "Hendrik Polczynski, Richard Marcoux III";
             };
 
-            const char* ListCVars() const __OVERRIDE;
+            const char* ListCVars() const  override;
 
-            const char* GetStatus() const __OVERRIDE;
+            const char* GetStatus() const  override;
 
-            const char* GetCurrentConcreteInterfaceVersion() const __OVERRIDE
+            const char* GetCurrentConcreteInterfaceVersion() const  override
             {
                 return "1.0";
             };
 
-            void* GetConcreteInterface(const char* sInterfaceVersion) __OVERRIDE
+            void* GetConcreteInterface(const char* sInterfaceVersion)  override
             {
                 return static_cast <IPluginHTML5*>(this);
             };
 
-            virtual bool InitDependencies() __OVERRIDE;
+            virtual bool InitDependencies()  override;
 
-            virtual bool CheckDependencies() const __OVERRIDE;
+            virtual bool CheckDependencies() const  override;
 
             // IPluginHTML5
-            IPluginBase* GetBase() __OVERRIDE
+            IPluginBase* GetBase()  override
             {
                 return static_cast<IPluginBase*>(this);
             };
