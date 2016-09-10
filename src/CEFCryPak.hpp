@@ -181,7 +181,7 @@ class CEFCryPakResourceHandler : public CefResourceHandler
 
 			// Get extension
 			nOffset = m_sPath.find_last_of('.') + 1;
-			m_sExtension = m_sPath.Mid(nOffset, 4).Trim().MakeLower();
+			m_sExtension = m_sPath.Mid(nOffset, 5).Trim().MakeLower();
 
 			// Get query
 			nOffset = sPath.find_first_of('?') + 1;
@@ -215,6 +215,7 @@ class CEFCryPakResourceHandler : public CefResourceHandler
                 case JOAAT("txt"):  m_sMime = "text/plain";                        break;
                 case JOAAT("json"): m_sMime = "application/json";                  break;
                 case JOAAT("woff"): m_sMime = "application/x-font-woff";           break;
+                case JOAAT("woff2"):m_sMime = "font/woff2";						   break;
                 case JOAAT("jpeg"): m_sMime = "image/jpeg";                        break;
                 case JOAAT("zip"):  m_sMime = "application/zip";                   break;
                 case JOAAT("htm"):  m_sMime = "text/html";                         break;

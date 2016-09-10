@@ -34,6 +34,10 @@ namespace HTML5Plugin
         gD3DSystem = nullptr;
     }
 
+	CPluginHTML5::CPluginHTML5(CPluginHTML5 *source) {
+
+	}
+
     CPluginHTML5::~CPluginHTML5()
     {
         Release(true);

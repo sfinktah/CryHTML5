@@ -32,7 +32,7 @@ namespace HTML5Plugin
     {
         public:
             CPluginHTML5();
-            ~CPluginHTML5();
+            virtual ~CPluginHTML5();
 
             float cm5_active; //!< cvar to activate the plugin
             float cm5_alphatest; //!< cvar for alpha test check
