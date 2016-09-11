@@ -4,6 +4,7 @@
 #include <Tearless/CEF/include/wrapper/cef_helpers.h>
 #include <Tearless/CEF/cefclient/browser/geometry_util.h>
 #include <CPluginHTML5.h>
+#include "Sfinktah/debug.h"
 //#include <windowsx.h>
 //#include <cefclient/browser/geometry_util.h>
 //#include <cefclient/browser/main_message_loop.h>
@@ -15,14 +16,16 @@
 namespace HTML5Plugin {
 	/// Tearless WndProc, returns 1 if processing should continue, 0 if event process should stop.
 	LRESULT CALLBACK CWndProc::OsrWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
-		//CEF_REQUIRE_UI_THREAD();
+		CEF_REQUIRE_UI_THREAD();
 		//gPlugin->LogError("CWndProc::OsrWndProc: CefCurrentlyOn() = %i", CefCurrentlyOn(TID_UI));
 
 		// CWndProc* self = GetUserDataPtr<CWndProc*>(hWnd);
 		CWndProc* self = HTML5Plugin::gWndProc;
 
-		if (!self)
+		if (!self) {
+			DEBUG_OUT("We were not ourselves when OsrWndProc came to town");
 			return 1;
+		}
 		//return DefWindowProc(hWnd, message, wParam, lParam);
 
 		switch (message) {
@@ -333,8 +336,10 @@ namespace HTML5Plugin {
 	}
 
 	void CWndProc::OnKeyEvent(UINT message, WPARAM wParam, LPARAM lParam) {
-		if (!browser_)
+		if (!browser_) {
+			DEBUG_OUT("OnKeyEvent(): No Browser, mo problems.");
 			return;
+		}
 
 		CefKeyEvent event;
 		event.windows_key_code = wParam;

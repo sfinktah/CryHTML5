@@ -48,6 +48,8 @@ namespace HTML5Plugin
             CefRefPtr<CefFrame> m_refCEFFrame;
             // XXX: Added vvv
             CefRefPtr<CefBrowser> m_refCEFBrowser; // sfink: why the fuck couldn't we just have this to begin with
+			CefRefPtr<CefBrowser> browser() const { return m_refCEFBrowser; }  // Getter
+			void browser(CefRefPtr<CefBrowser> v);
 
             // IPluginBase
             bool Release(bool bForce = false) override;
@@ -227,7 +229,10 @@ namespace HTML5Plugin
 		float device_scale_factor_width_;
 		float device_scale_factor_height_;
 
-		CefRefPtr<CefBrowser> browser_;
+		CefRefPtr<CefBrowser> browser_; 
+		CefRefPtr<CefBrowser> browser() const { return browser_; }  // Getter
+		void browser(CefRefPtr<CefBrowser> v) { browser_ = v; }     // Setter 
+
 
 #if defined(CEF_USE_ATL)
 		CComPtr<DropTargetWin> drop_target_;

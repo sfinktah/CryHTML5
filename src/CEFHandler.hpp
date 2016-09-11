@@ -48,7 +48,7 @@ class CEFCryLoadHandler : public CefLoadHandler
 			//_cefClient->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
 
 			//DEBUG_PTR(_renderHandler->SendContextCreated);
-			//HTML5Plugin::gPlugin->m_refCEFBrowser  = browser; // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
+			HTML5Plugin::gPlugin->browser(browser); // remember the fucking browser why-not (sfink) -- should this have a CefRefPtr though?
 			//HTML5Plugin::gPlugin->m_refCEFHandler->SendContextCreated(HTML5Plugin::gPlugin->m_refCEFBrowser);
         }
 

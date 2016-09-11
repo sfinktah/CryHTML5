@@ -97,7 +97,7 @@ namespace HTML5Plugin {
 			printf("hello = %s\n", document["hello"].GetString());
 
 			if (document.HasMember("js") && document["js"].IsString()) {
-				printf("Executing javascript: %s\n", document["hello"].GetString());
+				printf("Executing javascript: %s\n", document["js"].GetString());
 				std::string s(document["js"].GetString());
 				std::wstring ws;
 				int len = s.length();

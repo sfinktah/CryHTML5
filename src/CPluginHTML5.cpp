@@ -42,7 +42,14 @@ namespace HTML5Plugin
         gPlugin = NULL;
     }
 
-    bool CPluginHTML5::Release(bool bForce)
+	void CPluginHTML5::browser(CefRefPtr<CefBrowser> v)
+	{
+		m_refCEFBrowser = v;
+		if (gWndProc)
+			gWndProc->browser(v);
+	}
+
+	bool CPluginHTML5::Release(bool bForce)
     {
 
         bool bRet = true;
@@ -471,9 +478,9 @@ namespace HTML5Plugin
 
     bool CPluginHTML5::ExecuteJS(const wchar_t* sJS)
     {
-        if (m_refCEFFrame.get() != nullptr)
+        if (m_refCEFBrowser.get() != nullptr && m_refCEFBrowser->GetMainFrame() != nullptr)
         {
-            m_refCEFFrame->ExecuteJavaScript(sJS, CefString("CryHTML"), 0);
+			m_refCEFBrowser->GetMainFrame()->ExecuteJavaScript(sJS, CefString("CryHTML"), 0);
             return true;
         }
 
