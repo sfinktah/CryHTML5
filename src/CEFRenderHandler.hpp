@@ -183,7 +183,85 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 			// https://chromium.googlesource.com/external/angleproject/dx11proto/+/fc84fd6f076d504af33a78a906985ea2a2268346/src/libGLESv2/renderer/RenderTarget11.cpp
 			// https://msdn.microsoft.com/en-us/library/windows/desktop/ff476521(v=vs.85).aspx
 
-            ID3D11Device* pDevice = static_cast<ID3D11Device*>( HTML5Plugin::gD3DSystem->GetDevice() );
+			/* -- https://msdn.microsoft.com/en-us/library/ff476903.aspx
+			   -- How to: Create a Texture
+			   ---------------------------------------------------------
+			D3D11_TEXTURE2D_DESC desc;
+			desc.Width = 256;
+			desc.Height = 256;
+			desc.MipLevels = desc.ArraySize = 1;
+			desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			desc.SampleDesc.Count = 1;
+			desc.Usage = D3D11_USAGE_DYNAMIC;
+			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+			desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			desc.MiscFlags = 0;
+
+			ID3D11Device *pd3dDevice; // Don't forget to initialize this
+			ID3D11Texture2D *pTexture = NULL;
+			pd3dDevice->CreateTexture2D( &desc, NULL, &pTexture );
+			*/// -----------------------------------------------------------
+
+			ID3D11Device* pDevice = static_cast<ID3D11Device*>( HTML5Plugin::gD3DSystem->GetDevice() );
+			// IDXGISwapChain* pSwapChain = static_cast<IDXGISwapChain*>( HTML5Plugin::gD3DSystem->GetSwapChain() );
+            // pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&_texture);
+            // DX11Device->CreateRenderTargetView(DX11BackBuffer, NULL, &DX11RenderTargetView);
+
+			D3D11_TEXTURE2D_DESC desc;
+			desc.Width = _windowWidth;
+			desc.Height = _windowHeight;
+			desc.MipLevels = desc.ArraySize = 1;
+			desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.Usage = D3D11_USAGE_DYNAMIC;
+			desc.Usage = D3D11_USAGE_DEFAULT; // D3D11_USAGE_DYNAMIC; // 
+			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+			desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			desc.MiscFlags = 0;
+
+			ID3D11Device *pd3dDevice = pDevice; // Don't forget to initialize this
+			// ID3D11Texture2D *pTexture = NULL;
+			HRESULT result = pd3dDevice->CreateTexture2D( &desc, NULL, &_texture );
+			if (result == E_OUTOFMEMORY)
+			{
+				HTML5Plugin::gPlugin->LogError("CEFRenderHandler: Out of Memory");
+				return;
+			}
+			if (result == E_INVALIDARG)
+			{
+				HTML5Plugin::gPlugin->LogError("CEFRenderHandler: One or more arguments is invalid");
+				return;
+			}
+			_ASSERT(SUCCEEDED(result));
+
+			if ( _texture )
+			{
+				D3D11_TEXTURE2D_DESC texdesc = {0};
+				_texture->GetDesc( &texdesc );
+
+				D3D11_SHADER_RESOURCE_VIEW_DESC srvdesc;
+				ZeroMemory( &srvdesc, sizeof( D3D11_SHADER_RESOURCE_VIEW_DESC ) );
+
+				srvdesc.Format = texdesc.Format;
+				srvdesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+				srvdesc.Texture2D.MipLevels = texdesc.MipLevels;
+				srvdesc.Texture2D.MostDetailedMip = texdesc.MipLevels - 1;
+
+				HRESULT hr = pDevice->CreateShaderResourceView( _texture, &srvdesc, &_srv );
+
+				if ( SUCCEEDED( hr ) )
+				{
+					HTML5Plugin::gPlugin->LogAlways( "CreateShaderResourceView: %p", _srv );
+				}
+
+				else
+				{
+					HTML5Plugin::gPlugin->LogAlways( "Fail CreateShaderResourceView" );
+				}
+			}
+
+#ifdef REDUX_FUCKYA
 
 			// Okay, so we don't really need the baggage involved in creating a 
 			// CryTexture, and we don't have that code, if it we wanted to.
@@ -230,16 +308,15 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 			mRenderTarget = NULL;
 			mDepthStencil = NULL;
 			mShaderResource = NULL;
-			int depth = 0; // or maybe zero, it changes whether we bind as a STENCIL or a SHADER resource
 
-			// When copying the buffer to D3D11_MAPPED_SUBRESOURCE I miscalculated the row size so I was getting black image..So if anyone gets here trying to render with Direct3D, just use DXGI_FORMAT_B8G8R8A8_UNORM it works!
 			DXGI_FORMAT requestedFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 			if (_windowWidth > 0 && _windowHeight > 0)
 			{
 				// Create texture resource
 				D3D11_TEXTURE2D_DESC desc;
-				desc.Width = _windowWidth; 
-				desc.Height = _windowHeight;
+				int depth = 0; // or maybe zero, it changes whether we bind as a STENCIL or a SHADER resource
+				desc.Width = 1920; // _windowWidth;
+				desc.Height = 1080; //  _windowHeight;
 				desc.MipLevels = 1;
 				desc.ArraySize = 1;
 				desc.Format = requestedFormat;
@@ -249,14 +326,13 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 				desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // sfink: optimise this later
 				desc.MiscFlags = 0;
 				desc.BindFlags = (depth ? D3D11_BIND_DEPTH_STENCIL : (D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE));
-
+                
 				// From TwSimpleDX11
 				// desc.SampleDesc = g_SwapChainDesc.SampleDesc;
 				// desc.Usage = D3D11_USAGE_DEFAULT;
-				// desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 				// desc.CPUAccessFlags = 0;
+				// desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 				// desc.MiscFlags = 0;
-
 
 
 				ID3D11Device *device = pDevice; //  mRenderer->getDevice();
@@ -272,54 +348,37 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 					return;
 				}
 				_ASSERT(SUCCEEDED(result));
-				if (depth)
-				{
-					D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-					dsvDesc.Format = requestedFormat;
-					dsvDesc.ViewDimension = 1 ? D3D11_DSV_DIMENSION_TEXTURE2D : D3D11_DSV_DIMENSION_TEXTURE2DMS;
-					dsvDesc.Texture2D.MipSlice = 0;
-					dsvDesc.Flags = 0;
-					result = device->CreateDepthStencilView(mTexture, &dsvDesc, &mDepthStencil);
-					if (result == E_OUTOFMEMORY)
-					{
-						mTexture->Release();
-						mTexture = NULL;
-						HTML5Plugin::gPlugin->LogError("CEFRenderHandler: Out of Memory");
-					}
-					_ASSERT(SUCCEEDED(result));
-				}
-				else
-				{
-					D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-					rtvDesc.Format = requestedFormat;
-					rtvDesc.ViewDimension = 1 ? D3D11_RTV_DIMENSION_TEXTURE2D : D3D11_RTV_DIMENSION_TEXTURE2DMS;
-					rtvDesc.Texture2D.MipSlice = 0;
-					result = device->CreateRenderTargetView(mTexture, &rtvDesc, &mRenderTarget);
-					if (result == E_OUTOFMEMORY)
-					{
-						mTexture->Release();
-						mTexture = NULL;
-						HTML5Plugin::gPlugin->LogError("CEFRenderHandler: Out of Memory");
-						return;
-					}
-					_ASSERT(SUCCEEDED(result));
-					D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-					srvDesc.Format = requestedFormat;
-					srvDesc.ViewDimension = 1 ? D3D11_SRV_DIMENSION_TEXTURE2D : D3D11_SRV_DIMENSION_TEXTURE2DMS;
-					srvDesc.Texture2D.MostDetailedMip = 0;
-					srvDesc.Texture2D.MipLevels = 1;
-					result = device->CreateShaderResourceView(mTexture, &srvDesc, &mShaderResource);
-					if (result == E_OUTOFMEMORY)
-					{
-						mTexture->Release();
-						mTexture = NULL;
-						mRenderTarget->Release();
-						mRenderTarget = NULL;
-						HTML5Plugin::gPlugin->LogError("CEFRenderHandler: Out of Memory");
-						return;
-					}
-					_ASSERT(SUCCEEDED(result));
-				}
+
+                D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
+                rtvDesc.Format = requestedFormat;
+                rtvDesc.ViewDimension = 1 ? D3D11_RTV_DIMENSION_TEXTURE2D : D3D11_RTV_DIMENSION_TEXTURE2DMS;
+                rtvDesc.Texture2D.MipSlice = 0;
+                result = device->CreateRenderTargetView(mTexture, &rtvDesc, &mRenderTarget);
+                if (result == E_OUTOFMEMORY)
+                {
+                    mTexture->Release();
+                    mTexture = NULL;
+                    HTML5Plugin::gPlugin->LogError("CEFRenderHandler: Out of Memory");
+                    return;
+                }
+                _ASSERT(SUCCEEDED(result));
+
+                D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+                srvDesc.Format = requestedFormat;
+                srvDesc.ViewDimension = 1 ? D3D11_SRV_DIMENSION_TEXTURE2D : D3D11_SRV_DIMENSION_TEXTURE2DMS;
+                srvDesc.Texture2D.MostDetailedMip = 0;
+                srvDesc.Texture2D.MipLevels = 1;
+                result = device->CreateShaderResourceView(mTexture, &srvDesc, &mShaderResource);
+                if (result == E_OUTOFMEMORY)
+                {
+                    mTexture->Release();
+                    mTexture = NULL;
+                    mRenderTarget->Release();
+                    mRenderTarget = NULL;
+                    HTML5Plugin::gPlugin->LogError("CEFRenderHandler: Out of Memory");
+                    return;
+                }
+                _ASSERT(SUCCEEDED(result));
 			}
 			mSubresourceIndex = D3D11CalcSubresource(0, 0, 1);
 
@@ -354,6 +413,7 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
 			//CefMessageRouterConfig config;
 			//m_MessageRouterRenderSide = CefMessageRouterRendererSide::Create(config);
+#endif
         }
 
     public:
