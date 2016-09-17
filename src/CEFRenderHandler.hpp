@@ -28,6 +28,8 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
     private:
         const void* _buffer; //!< the CEF frame buffer (not synchronized to reduce overhead)
 
+        // D3D11_TEXTURE2D_DESC
+        // (D3D11_TEXTURE2D_DESC|ID3D11Texture2D|ID3D11ShaderResourceView)
         ID3D11Texture2D* _texture; //!< the Direct3D 11 texture
         ITexture* _itexture;  //!< the CryENGINE texture
         ID3D11ShaderResourceView* _srv; //!< the Direct3D 11 texture resource
@@ -153,56 +155,6 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
 
             const int bytesPerRow = _windowWidth * 4;
 
-#ifdef USE_MAPPED
-            D3D11_MAPPED_SUBRESOURCE mapped;
-            HRESULT hr = pContext->Map( pTexture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped ); // D3D11_MAP_WRITE doesn't work so we will not update all so don't use USE_MAPPED
-
-            if ( FAILED( hr ) )
-            {
-                HTML5Plugin::gPlugin->LogAlways( "Fail Map hr=%d", hr );
-            }
-
-            else
-            {
-                int h = _dy2 - dy;
-                int w = _dx2 - dx;
-
-                const int _pitchDst = mapped.RowPitch + _dx * 4;
-                int offsetDst = mapped.RowPitch * _dy;
-                char* pDest = static_cast<char*>( mapped.pData );
-                const char* pSrc = ( const char* )_buffer;
-
-                const size_t size = _windowWidth * _windowHeight * 4;
-
-                int offsetSrc = bytesPerRow * _dy;
-
-                const int _bytesRow = w * 4;
-                const int _pitchSrc = bytesPerRow + _dx * 4;
-
-                if ( _windowWidth * 4 == mapped.RowPitch && h == _windowHeight && w == _windowWidth )
-                {
-                    ::memcpy( pDest, pSrc, size );
-                }
-
-                else
-                {
-                    pSrc += _dy * bytesPerRow +  _dx * 4;
-                    pDest += _dy * mapped.RowPitch + _dx * 4;
-
-                    for ( int row = _dy; row < _dy2; ++row )
-                    {
-                        ::memcpy( pDest, pSrc, _bytesRow );
-                        pSrc += _pitchSrc;
-                        pDest += _pitchDst;
-                    }
-                }
-
-                pContext->Unmap( pTexture, 0 );
-
-                resetdirty();
-            }
-
-#else
             D3D11_BOX box = {0}; // http://msdn.microsoft.com/en-us/library/windows/desktop/ff476486%28v=vs.85%29.aspx
             box.front = 0;
             box.back = 1;
@@ -220,7 +172,6 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
             pSrc += box.top * bytesPerRow + box.left * 4;
 
             pContext->UpdateSubresource( pTexture, 0, &box, ( void* )pSrc, bytesPerRow, 0 );
-#endif
         }
 
         /** @brief Creates the CryENGINE and Direct3D resource */
@@ -228,11 +179,7 @@ class CEFCryRenderHandler : public CefRenderHandler, public D3DPlugin::ID3DEvent
         {
             ID3D11Device* pDevice = static_cast<ID3D11Device*>( HTML5Plugin::gD3DSystem->GetDevice() );
 
-#ifdef USE_MAPPED
-            _itexture = HTML5Plugin::gD3DSystem->CreateTexture( ( void** )&_texture, _windowWidth, _windowHeight, 1,  eTF_X8R8G8B8, FT_USAGE_DYNAMIC | TEXTURE_FLAGS );
-#else
             _itexture = HTML5Plugin::gD3DSystem->CreateTexture( ( void** )&_texture, _windowWidth, _windowHeight, 1,  eTF_X8R8G8B8, TEXTURE_FLAGS ); //FT_USAGE_RENDERTARGET?
-#endif
 
             HTML5Plugin::gPlugin->LogAlways( "CreateTexture: %p, %p", _texture, _itexture );
 
