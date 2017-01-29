@@ -14,6 +14,7 @@
 #include <cef_scheme.h>
 #include <include/wrapper/cef_stream_resource_handler.h>
 #include <Sfinktah/debug.h>
+#include <TwSimpleDX11.h>
 
 #ifdef malloc
 #define UNDO_UNDEF_ALLOC
@@ -23,6 +24,7 @@
 #undef calloc
 #endif
 
+#include <string>
 #include <Tearless/rapidjson/include/rapidjson/document.h>     // rapidjson's DOM-style API
 #include <Tearless/rapidjson/include/rapidjson/prettywriter.h> // for stringify JSON
 
@@ -41,16 +43,24 @@ using namespace rapidjson;
 
 
 namespace HTML5Plugin {
-	class CEFQueryUrl
-	{
+	class CEFQueryUrl {
+	private:
+		std::string jsonReply;
+		int status;
 	public:
-		static void ProcessQuery(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback, const char* path, const char* extension, const char* query) {
+		static std::string ProcessQuery(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback, const char* path, const char* extension, const char* query) {
 			CEFQueryUrl q(request, callback, path, extension, query);
+			if (!q.status) {
+				return std::string("{\"result\";\"FAIL\"}");
+			}
+			else {
+				return q.jsonReply;
+			}
 		}
 
 		CEFQueryUrl(CefRefPtr<CefRequest> request, CefRefPtr<CefCallback> callback, const char* path, const char* extension, const char* query)
 		{
-			parseJson(query);
+			status = parseJson(query);
 		}
 
 		~CEFQueryUrl()
@@ -90,9 +100,25 @@ namespace HTML5Plugin {
 			// 2. Access values in document. 
 
 			printf("\nAccess values in document:\n");
+			if (document.IsObject() && document.HasMember("request") && document["request"].IsString()) {
+				printf("request found\n");
+				if (g_fnJsonCallback) {
+					printf("Calling g_fnJsonCallback\n");
+					char* json_not_const = _strdup(json);
+					jsonReply = g_fnJsonCallback(json_not_const);
+					free(json_not_const);
+					return 1;
+				}
+				else {
+					printf("Nowhere to send json request\n");
+				}
+			}
+			else {
+				printf("request not found");
+			}
 			assert(document.IsObject());    // Document is a JSON value represents the root of DOM. Root can be either an object or array.
 
-			assert(document.HasMember("hello"));
+			assert(document.HasMember("request"));
 			assert(document["hello"].IsString());
 			printf("hello = %s\n", document["hello"].GetString());
 

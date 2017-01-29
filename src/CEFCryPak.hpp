@@ -9,6 +9,7 @@
 #include <Sfinktah/debug.h>
 #include <CEFQueryUrl.h>
 
+
 uint32_t reference_jenkins_one_at_a_time_hash(char *key, size_t len)
 {
 	uint32_t hash, i;
@@ -40,6 +41,7 @@ constexpr unsigned int JOAAT(const char* text, unsigned int hash = 0) {
 		: SHL(XHR(SHL((XHR(SHL((hash + *text), 10), 6)), 3), 11), 15)
 		;
 }
+
 
 // from http://stackoverflow.com/questions/2616011/easy-way-to-parse-a-url-in-c-cross-platform
 #ifndef URL_HH_
@@ -150,6 +152,8 @@ class CEFCryPakResourceHandler : public CefResourceHandler
         string m_sExtension; //!< file extension
 		string m_sQuery; //<- optional query CefString
         string m_sMime; //!< mime type
+		std::string m_sJsonReply;
+		size_t m_nJsonReply;
         size_t m_nSize; //!< file size
         size_t m_nOffset; //!< current position inside of file
 
@@ -189,8 +193,14 @@ class CEFCryPakResourceHandler : public CefResourceHandler
 				m_sQuery = sPath.Mid(nOffset).Trim();
 				const string query = m_sQuery;
 				std::string decodedQuery = form_urldecode(query.c_str());
-				DEBUG_OUT_A("Decoded Query: %s", decodedQuery.c_str());
-				HTML5Plugin::CEFQueryUrl::ProcessQuery(request, callback, m_sPath.c_str(), m_sExtension.c_str(), decodedQuery.c_str());
+				//DEBUG_OUT_A("Decoded Query: %s", decodedQuery.c_str());
+				m_sJsonReply = HTML5Plugin::CEFQueryUrl::ProcessQuery(request, callback, m_sPath.c_str(), m_sExtension.c_str(), decodedQuery.c_str());
+				//DEBUG_OUT_A("JSON Reply: %s", m_sJsonReply.c_str());
+				m_sMime = "application/json";
+				m_nSize = m_sJsonReply.length();
+
+                callback->Continue();
+                return true; // Return true to handle the request.
 			}
 
             // Get Mime (TODO: Later use CefGetMimeType -> requires update) // https://code.google.com/p/chromiumembedded/source/detail?r=1577
@@ -242,10 +252,10 @@ class CEFCryPakResourceHandler : public CefResourceHandler
             // Open File
 			// sfink
             // if ( ( m_fHandle = gEnv->pCryPak->FOpen( m_sPath, "rb" ) ) == NULL )
-            if ( ( m_fHandle = ::fopen(m_sPath, "rb" ) ) == NULL )
-            {
-                HTML5Plugin::gPlugin->LogWarning( "ProcessRequest(%s) Unable to find specified path in pak", m_sPath.c_str() );
-            }
+			if ((m_fHandle = ::fopen(m_sPath, "rb")) == NULL)
+			{
+				HTML5Plugin::gPlugin->LogWarning("ProcessRequest(%s) Unable to find specified path in pak", m_sPath.c_str());
+			}
 
             else {
 				m_nSize;
@@ -273,22 +283,20 @@ class CEFCryPakResourceHandler : public CefResourceHandler
         */
         virtual void GetResponseHeaders( CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl ) OVERRIDE
         {
-            if(m_fHandle)
+
+            if(m_fHandle || m_sJsonReply.length())
             {
                 // Populate the response headers.
                 response->SetStatus( 200 ); // OK
                 response->SetMimeType( m_sMime.c_str() );
-
                 // Specify the resulting response length.
                 response_length = m_nSize;
             } else {
                 response->SetStatus( 404 ); // not found
                 response->SetMimeType( m_sMime.c_str() );
-
                 // Specify the resulting response length.
                 response_length = 0;
             }
-
         }
 
         virtual void Cancel() OVERRIDE
@@ -317,26 +325,49 @@ class CEFCryPakResourceHandler : public CefResourceHandler
             bool has_data = false;
             bytes_read = 0;
 
-            if ( m_nOffset < m_nSize && data_out && m_fHandle )
+			//DEBUG_OUT_A("bytes_read: %i, bytes_to_read: %i, m_nSize: %i, m_nOffset: %i",
+			//	bytes_read,
+			//	bytes_to_read,
+			//	m_nSize,
+			//	m_nOffset);
+
+			if (m_nOffset < m_nSize && data_out && (m_fHandle || m_sJsonReply.length()))
             {
                 // Copy the next block of data into the buffer.
                 int transfer_size = min( bytes_to_read, static_cast<int>( m_nSize - m_nOffset ) );
+				//DEBUG_OUT_A("transfer_size: %i", transfer_size);
+			
 
-                // Read from pack
-				transfer_size = ::fread(data_out, 1, bytes_to_read, m_fHandle);
-                // transfer_size = gEnv->pCryPak->FReadRaw( data_out, 1, transfer_size, m_fHandle );
+				if (m_sJsonReply.length()) {
+					char *copyout;
+					// transfer_size = strlen(copyout = strncpy((char *)data_out, &m_sJsonReply[m_nOffset], bytes_to_read));
+					// XXX sfink: `m_nSize` can be bigger than the buffer and will cause overflow, replaced with `transfer_size`
+					copyout = strncpy((char *)data_out, m_sJsonReply.c_str(), /* m_nSize */ transfer_size);
+					bytes_read = transfer_size;
+					//DEBUG_OUT_A("transfer_size: %i, content: %s", transfer_size, m_sJsonReply.c_str());
+					return true;
+				}
+				else {
+					// Read from pack
+					transfer_size = ::fread(data_out, 1, bytes_to_read, m_fHandle);
+					// transfer_size = gEnv->pCryPak->FReadRaw( data_out, 1, transfer_size, m_fHandle );
+				}
 
                 // Save offset
                 m_nOffset += transfer_size;
+				//DEBUG_OUT_A("m_nOffset: %i", m_nOffset);
 
                 // Success
                 bytes_read = transfer_size;
+				//DEBUG_OUT_A("bytes_read: %i", bytes_read);
                 has_data = true; // m_nOffset < m_nSize ?
             }
 
+			//DEBUG_OUT_A("has_data: %i", has_data);
             // Close File Handle
             if ( !has_data )
             {
+				//DEBUG_OUT_A("Cancelled()\n");
                 Cancel();
             }
 

@@ -273,32 +273,7 @@ namespace HTML5Plugin
 
         static D3DPlugin::CPluginD3D modulePlugin;
         D3DPlugin::gPlugin = &modulePlugin;
-        D3DPlugin::gPlugin->InitWithoutPluginManager(); // modulePlugin.InitWithoutPluginManager();
-
-                                                        // IPluginD3DEx* m_pDXSystem;
-                                                        /*
-                                                        void* GetConcreteInterface( const char* sInterfaceVersion )
-                                                        {
-                                                        return static_cast <IPluginD3D*>( m_pDXSystem );
-                                                        };
-
-                                                        template<typename tCIFace>
-                                                        static tCIFace safeUsePluginConcreteInterface( const char* sPlugin, const char* sVersion = NULL )
-                                                        {
-                                                        IPluginBase* pBase = gPluginManager ? gPluginManager->GetPluginByName( sPlugin ) : NULL;
-                                                        tCIFace pPlugin = static_cast<tCIFace>( pBase ? pBase->GetConcreteInterface( sVersion ) : NULL );
-
-                                                        if ( pPlugin )
-                                                        {
-                                                        pBase->AddRef();
-                                                        }
-
-                                                        return pPlugin;
-                                                        };
-
-                                                        */
-
-                                                        // gD3DSystem = PluginManager::safeUsePluginConcreteInterface<D3DPlugin::IPluginD3D*>( "D3D" );
+        D3DPlugin::gPlugin->InitWithoutPluginManager(); 
         gD3DSystem = static_cast <D3DPlugin::IPluginD3D*>(modulePlugin.GetConcreteInterface(NULL));
 
         // When to init? And as what?
@@ -345,7 +320,7 @@ namespace HTML5Plugin
         m_sCEFLog = PluginManager::pathWithSeperator(gPluginManager->GetDirectoryRoot()) + "CryHTML5.log";
         m_sCEFResourceDir = gPluginManager->GetPluginDirectory(GetName());
         m_sCEFLocalesDir = PluginManager::pathWithSeperator(gPluginManager->GetPluginDirectory(GetName())) + "locales";
-// Initialize Settings
+
         // Initialize Settings
         CefSettings settings;
         CefString(&settings.browser_subprocess_path).FromASCII(m_sCEFBrowserProcess.c_str());
