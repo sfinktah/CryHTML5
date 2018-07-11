@@ -342,10 +342,12 @@ class CEFCryPakResourceHandler : public CefResourceHandler
 					char *copyout;
 					// transfer_size = strlen(copyout = strncpy((char *)data_out, &m_sJsonReply[m_nOffset], bytes_to_read));
 					// XXX sfink: `m_nSize` can be bigger than the buffer and will cause overflow, replaced with `transfer_size`
-					copyout = strncpy((char *)data_out, m_sJsonReply.c_str(), /* m_nSize */ transfer_size);
-					bytes_read = transfer_size;
+					//            naughty naughty, strncpy killed our binary json
+					// copyout = strncpy((char *)data_out, m_sJsonReply.c_str(), /* m_nSize */ transfer_size);
+					memcpy(data_out, m_sJsonReply.c_str() + m_nOffset, transfer_size);
+
 					//DEBUG_OUT_A("transfer_size: %i, content: %s", transfer_size, m_sJsonReply.c_str());
-					return true;
+					// return true;
 				}
 				else {
 					// Read from pack

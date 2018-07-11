@@ -2,7 +2,7 @@
 #include <windowsx.h>
 #include "../../../../../AuthorityProjectConfig.h"
 #include <Tearless/CEF/include/wrapper/cef_helpers.h>
-#include <Tearless/CEF/cefclient/browser/geometry_util.h>
+#include <Tearless/CEF/tests/shared/browser/geometry_util.h>
 #include <CPluginHTML5.h>
 #include "Sfinktah/debug.h"
 //#include <windowsx.h>
@@ -151,7 +151,8 @@ namespace HTML5Plugin {
 					mouse_event.y = y;
 					//last_mouse_down_on_view_ = !IsOverPopupWidget(x, y);
 					//ApplyPopupOffset(mouse_event.x, mouse_event.y);
-					client::DeviceToLogical(mouse_event, device_scale_factor_width_, device_scale_factor_height_);
+					// New definition no longer accepts optional third param 'scale-factor-height'
+					client::DeviceToLogical(mouse_event, device_scale_factor_width_); //  , device_scale_factor_height_);
 					mouse_event.modifiers = GetCefMouseModifiers(wParam);
 					browser_host->SendMouseClickEvent(mouse_event, btnType, false,
 						last_click_count_);
@@ -186,7 +187,8 @@ namespace HTML5Plugin {
 					//  break;
 					//}
 					//ApplyPopupOffset(mouse_event.x, mouse_event.y);
-					client::DeviceToLogical(mouse_event, device_scale_factor_width_, device_scale_factor_height_);
+				// New definition no longer accepts optional third param 'scale-factor-height'
+					client::DeviceToLogical(mouse_event, device_scale_factor_width_); //  , device_scale_factor_height_);
 					mouse_event.modifiers = GetCefMouseModifiers(wParam);
 					browser_host->SendMouseClickEvent(mouse_event, btnType, true,
 						last_click_count_);
@@ -225,7 +227,8 @@ namespace HTML5Plugin {
 					mouse_event.x = x;
 					mouse_event.y = y;
 					//ApplyPopupOffset(mouse_event.x, mouse_event.y);
-					client::DeviceToLogical(mouse_event, device_scale_factor_width_, device_scale_factor_height_);
+					// New definition no longer accepts optional third param 'scale-factor-height'
+					client::DeviceToLogical(mouse_event, device_scale_factor_width_ /* , device_scale_factor_height_ */);
 					mouse_event.modifiers = GetCefMouseModifiers(wParam);
 					browser_host->SendMouseMoveEvent(mouse_event, false);
 				}
@@ -253,7 +256,8 @@ namespace HTML5Plugin {
 				CefMouseEvent mouse_event;
 				mouse_event.x = p.x;
 				mouse_event.y = p.y;
-				client::DeviceToLogical(mouse_event, device_scale_factor_width_, device_scale_factor_height_);
+				// New definition no longer accepts optional third param 'scale-factor-height'
+				client::DeviceToLogical(mouse_event, device_scale_factor_width_); //  , device_scale_factor_height_);
 				mouse_event.modifiers = GetCefMouseModifiers(wParam);
 				browser_host->SendMouseMoveEvent(mouse_event, true);
 			}
@@ -273,7 +277,8 @@ namespace HTML5Plugin {
 				mouse_event.x = screen_point.x;
 				mouse_event.y = screen_point.y;
 				//ApplyPopupOffset(mouse_event.x, mouse_event.y);
-				client::DeviceToLogical(mouse_event, device_scale_factor_width_, device_scale_factor_height_);
+				// New definition no longer accepts optional third param 'scale-factor-height'
+				client::DeviceToLogical(mouse_event, device_scale_factor_width_); //  , device_scale_factor_height_);
 				mouse_event.modifiers = GetCefMouseModifiers(wParam);
 				browser_host->SendMouseWheelEvent(mouse_event,
 					isKeyDown(VK_SHIFT) ? delta : 0,
